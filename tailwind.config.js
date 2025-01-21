@@ -1,7 +1,6 @@
-import type { Config } from 'tailwindcss'
-import { fontFamily } from 'tailwindcss/defaultTheme'
+const { fontFamily } = require('tailwindcss/defaultTheme')
 
-const config: Config = {
+module.exports = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
@@ -11,12 +10,14 @@ const config: Config = {
     extend: {
       colors: {
         'brand': {
+          // Light purple palette
           lavender: {
             light: "#f3e8ff",
             medium: "#e3c8ff",
             dark: "#d0aaff",
           },
           accent: "#7e3af2",
+          // Text colors
           text: {
             primary: "#1a1a1a",
             secondary: "#4a4a4a",
@@ -33,12 +34,10 @@ const config: Config = {
           '-apple-system',
           'BlinkMacSystemFont',
           'Inter var',
-          ...(fontFamily.sans as string[])
+          ...fontFamily.sans
         ],
       },
     },
   },
   plugins: [],
-}
-
-export default config
+} 
