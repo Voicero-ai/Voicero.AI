@@ -6,11 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "postinstall": "prisma generate",
+    "postbuild": "next-sitemap",
     "lint": "next lint"
   },
   "dependencies": {
+    "@prisma/client": "^6.2.1",
     "framer-motion": "^11.0.0",
     "next": "14.1.0",
+    "prisma": "^6.2.1",
     "react": "^18",
     "react-dom": "^18",
     "react-icons": "^5.0.0"

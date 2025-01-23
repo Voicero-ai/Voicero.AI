@@ -46,9 +46,9 @@ export default function Contact() {
 
             <div className="grid md:grid-cols-3 gap-8 mb-12">
               {[
-                { icon: FaEnvelope, title: "Email", info: "contact@vocero.ai" },
-                { icon: FaPhone, title: "Phone", info: "+1 (555) 123-4567" },
-                { icon: FaMapMarkerAlt, title: "Location", info: "San Francisco, CA" }
+                { icon: FaEnvelope, title: "Email", info: "info@voicero.ai" },
+                { icon: FaPhone, title: "Phone", info: "+1 (720) 612-2979" },
+                { icon: FaMapMarkerAlt, title: "Location", info: "Phoenix, AZ" }
               ].map((item, index) => (
                 <motion.div
                   key={item.title}
@@ -81,7 +81,7 @@ export default function Contact() {
                       required
                       value={formData.name}
                       onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full px-4 py-2 rounded-lg border border-brand-lavender-light/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/20"
+                      className="w-full px-4 py-2 rounded-lg border border-brand-lavender-light/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/20 bg-gray-100"
                     />
                   </div>
                   <div>
@@ -93,7 +93,7 @@ export default function Contact() {
                       required
                       value={formData.email}
                       onChange={e => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      className="w-full px-4 py-2 rounded-lg border border-brand-lavender-light/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/20"
+                      className="w-full px-4 py-2 rounded-lg border border-brand-lavender-light/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/20 bg-gray-100"
                     />
                   </div>
                 </div>
@@ -105,7 +105,7 @@ export default function Contact() {
                     type="text"
                     value={formData.company}
                     onChange={e => setFormData(prev => ({ ...prev, company: e.target.value }))}
-                    className="w-full px-4 py-2 rounded-lg border border-brand-lavender-light/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/20"
+                    className="w-full px-4 py-2 rounded-lg border border-brand-lavender-light/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/20 bg-gray-100"
                   />
                 </div>
                 <div>
@@ -117,7 +117,7 @@ export default function Contact() {
                     rows={4}
                     value={formData.message}
                     onChange={e => setFormData(prev => ({ ...prev, message: e.target.value }))}
-                    className="w-full px-4 py-2 rounded-lg border border-brand-lavender-light/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/20"
+                    className="w-full px-4 py-2 rounded-lg border border-brand-lavender-light/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/20 bg-gray-100"
                   />
                 </div>
                 <motion.button

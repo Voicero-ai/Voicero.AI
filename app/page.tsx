@@ -1,10 +1,11 @@
-import React from 'react';
-import Navbar from '@/components/Navbar';
-import Hero from '@/components/Hero';
-import Features from '@/components/Features';
-import Demo from '@/components/Demo';
-import CTA from '@/components/CTA';
-import Footer from '@/components/Footer';
+import React from "react";
+import Navbar from "@/components/Navbar";
+import Hero from "@/components/Hero";
+import Features from "@/components/Features";
+import Demo from "@/components/Demo";
+import Pricing from "@/components/Pricing";
+import Footer from "@/components/Footer";
+import CTA from "@/components/CTA";
 
 export default function Home() {
   return (
@@ -13,6 +14,7 @@ export default function Home() {
       <Hero />
       <Features />
       <Demo />
+      <Pricing />
       <CTA />
       <Footer />
     </main>

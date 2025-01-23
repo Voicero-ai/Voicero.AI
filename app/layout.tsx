@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Vocero.AI - Voice Navigation Assistant",
+  title: "Voicero.AI - Voice Navigation Assistant",
   description: "AI-powered voice navigation for websites and e-commerce",
 };
 

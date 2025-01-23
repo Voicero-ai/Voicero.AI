@@ -1,9 +1,18 @@
 "use client";
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { FaShopify, FaChrome, FaMicrophone, FaComments, FaRobot, FaBrain, FaGlobe } from 'react-icons/fa';
-import { IoSend, IoSpeedometer } from 'react-icons/io5';
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import {
+  FaShopify,
+  FaWordpress,
+  FaMicrophone,
+  FaComments,
+  FaRobot,
+  FaBrain,
+  FaGlobe,
+} from "react-icons/fa";
+import { IoSend, IoSpeedometer } from "react-icons/io5";
+import Link from "next/link";
 
 const sampleQuestions = [
   "Where can I find your pricing information?",
@@ -17,18 +26,18 @@ const sampleWebsiteContent = [
   {
     title: "E-commerce Store",
     url: "shop.example.com",
-    content: ["Products", "Categories", "Special Offers", "New Arrivals"]
+    content: ["Products", "Categories", "Special Offers", "New Arrivals"],
   },
   {
     title: "Tech Blog",
     url: "blog.example.com",
-    content: ["Latest Posts", "Tutorials", "Reviews", "Resources"]
+    content: ["Latest Posts", "Tutorials", "Reviews", "Resources"],
   },
   {
     title: "Service Provider",
     url: "service.example.com",
-    content: ["Services", "Solutions", "Pricing", "Contact"]
-  }
+    content: ["Services", "Solutions", "Pricing", "Contact"],
+  },
 ];
 
 // Add infographic data
@@ -36,30 +45,31 @@ const infographics = [
   {
     icon: FaRobot,
     title: "AI-Powered",
-    description: "Advanced natural language processing for accurate voice commands"
+    description:
+      "Advanced natural language processing for accurate voice commands",
   },
   {
     icon: FaBrain,
     title: "Smart Learning",
-    description: "Adapts to your website's structure and content automatically"
+    description: "Adapts to your website's structure and content automatically",
   },
   {
     icon: IoSpeedometer,
     title: "Lightning Fast",
-    description: "Real-time search and navigation across any webpage"
+    description: "Real-time search and navigation across any webpage",
   },
   {
     icon: FaGlobe,
     title: "Universal",
-    description: "Works on any website, from e-commerce to documentation"
-  }
+    description: "Works on any website, from e-commerce to documentation",
+  },
 ];
 
 export default function Hero() {
   const scrollToDemo = (e: React.MouseEvent) => {
     e.preventDefault();
-    const demoSection = document.getElementById('demo');
-    demoSection?.scrollIntoView({ behavior: 'smooth' });
+    const demoSection = document.getElementById("demo");
+    demoSection?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -68,15 +78,15 @@ export default function Hero() {
       className="relative min-h-screen pt-20 bg-gradient-to-b from-brand-lavender-light/20 to-white overflow-hidden"
     >
       {/* Background Elements */}
-      <motion.div 
-        animate={{ 
+      <motion.div
+        animate={{
           rotate: 360,
           scale: [1, 1.1, 1],
         }}
-        transition={{ 
+        transition={{
           duration: 20,
           repeat: Infinity,
-          repeatType: "reverse"
+          repeatType: "reverse",
         }}
         className="absolute inset-0 overflow-hidden"
       >
@@ -87,7 +97,7 @@ export default function Hero() {
       {/* Content */}
       <div className="container mx-auto px-4 pt-12">
         {/* Text Content */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -95,32 +105,33 @@ export default function Hero() {
         >
           <div className="flex items-center justify-center gap-4 mb-6">
             <FaShopify className="w-8 h-8 text-brand-accent" />
-            <FaChrome className="w-8 h-8 text-brand-accent" />
+            <FaWordpress className="w-8 h-8 text-brand-accent" />
           </div>
           <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-brand-accent to-brand-lavender-dark">
-            Vocero.AI
+            Voicero.AI
           </h1>
           <p className="text-lg md:text-xl mb-8 text-brand-text-secondary">
             Your AI-powered voice assistant for seamless website navigation
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <motion.a
+            <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              href="#cta"
-              className="btn-primary"
+              onClick={() => (window.location.href = "/contact")}
+              className="btn-primary cursor-pointer relative z-10 pointer-events-auto"
+              style={{ touchAction: "manipulation" }}
             >
               Get Started
-            </motion.a>
-            <motion.a
+            </motion.div>
+            <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              href="#demo"
               onClick={scrollToDemo}
-              className="btn-secondary"
+              className="btn-secondary cursor-pointer relative z-10 pointer-events-auto"
+              style={{ touchAction: "manipulation" }}
             >
               Watch Demo
-            </motion.a>
+            </motion.div>
           </div>
         </motion.div>
 
@@ -173,4 +184,4 @@ export default function Hero() {
       </div>
     </section>
   );
-} 
+}
