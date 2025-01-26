@@ -8,22 +8,34 @@ generator client {
 }
 
 model User {
-  id             String      @id @default(uuid()) // UUID-based ID
-  username       String      @unique
-  email          String      @unique
-  name           String
-  password       String
-  extensions     Extension[]
-  createdAt      DateTime    @default(now())
+  id              String           @id @default(uuid()) // UUID-based ID
+  username        String           @unique
+  email           String           @unique
+  name            String
+  password        String
+  profilePicture  String?
+  emailVerified   Boolean          @default(false)
+  emailCode       String?
+  extensions      Extension[]
+  createdAt       DateTime         @default(now())
+  verifiedDevices VerifiedDevice[]
+}
+
+model VerifiedDevice {
+  id        String   @id @default(cuid())
+  deviceId  String
+  userId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Extension {
-  id             String      @id @default(uuid()) // UUID-based ID
-  type           String                         // e.g., "WordPress", "Shopify"
-  licenseKey     String      @unique            // Auto-generated license key
-  allowedWebsite String                         // Allowed domain for the extension
-  stripeId       String      @unique            // Stripe subscription ID for this extension
+  id             String   @id @default(uuid()) // UUID-based ID
+  type           String // e.g., "WordPress", "Shopify"
+  licenseKey     String   @unique // Auto-generated license key
+  allowedWebsite String // Allowed domain for the extension
+  stripeId       String   @unique // Stripe subscription ID for this extension
   userId         String
-  user           User        @relation(fields: [userId], references: [id])
-  createdAt      DateTime    @default(now())
+  user           User     @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
 }

@@ -117,7 +117,7 @@ export default function Hero() {
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => (window.location.href = "/contact")}
+              onClick={() => (window.location.href = "/getStarted")}
               className="btn-primary cursor-pointer relative z-10 pointer-events-auto"
               style={{ touchAction: "manipulation" }}
             >
