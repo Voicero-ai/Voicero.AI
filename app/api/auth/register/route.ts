@@ -20,7 +20,7 @@ const registerSchema = z.object({
       /^(?=.*[0-9])(?=.*[!@#$%^&*])/,
       "Password must contain at least 1 number and 1 special character"
     ),
-  fullName: z.string().min(2, "Company name is required"),
+  companyName: z.string().min(2, "Company name is required"),
 });
 
 export async function POST(req: Request) {
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
         username: validatedData.username,
         email: validatedData.email,
         password: hashedPassword,
-        name: validatedData.fullName,
+        name: validatedData.companyName,
       },
       select: {
         id: true,

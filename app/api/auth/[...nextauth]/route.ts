@@ -2,8 +2,10 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import prisma from "@/lib/prisma";
+import { JWT } from "next-auth/jwt";
 
-const handler = NextAuth({
+
+export const authOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -11,18 +13,20 @@ const handler = NextAuth({
         login: { label: "Email or Username", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials): Promise<{ id: string } | null> {
         if (!credentials?.login || !credentials?.password) {
           throw new Error("Please enter your email/username and password");
         }
 
-        // Check if login is email or username
         const isEmail = credentials.login.includes("@");
-
         const user = await prisma.user.findFirst({
           where: isEmail
             ? { email: credentials.login }
             : { username: credentials.login },
+          select: {
+            id: true,
+            password: true,
+          },
         });
 
         if (!user) {
@@ -38,12 +42,7 @@ const handler = NextAuth({
           throw new Error("Invalid password");
         }
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          username: user.username,
-        };
+        return { id: user.id };
       },
     }),
   ],
@@ -51,22 +50,25 @@ const handler = NextAuth({
     signIn: "/login",
   },
   session: {
-    strategy: "jwt",
+    strategy: "jwt" as const,
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: JWT; user: any }) {
       if (user) {
-        token.username = user.username as string;
+        token.sub = user.id;
       }
       return token;
     },
-    async session({ session, token }: { session: any; token: any }) {
-      if (session.user) {
-        session.user.username = token.username as string;
-      }
-      return session;
+    async session({ session, token }: { session: any; token: JWT }) {
+      return {
+        ...session,
+        user: {
+          id: token.sub,
+        },
+      };
     },
   },
-});
+};
 
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };

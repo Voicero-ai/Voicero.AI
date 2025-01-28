@@ -38,7 +38,7 @@ export default function Login() {
       if (result?.error) {
         setError(result.error);
       } else {
-        router.push("/dashboard"); // Redirect to dashboard on success
+        router.push("/app"); // Redirect to dashboard on success
       }
     } catch (error) {
       setError("An error occurred during sign in");

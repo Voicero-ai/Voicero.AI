@@ -9,14 +9,14 @@ import Navbar from "@/components/Navbar";
 import { useRouter } from "next/navigation";
 
 interface FormData {
-  fullName: string;
+  companyName: string;
   username: string;
   email: string;
   password: string;
 }
 
 interface FormErrors {
-  fullName?: string;
+  companyName?: string;
   username?: string;
   email?: string;
   password?: string;
@@ -27,7 +27,7 @@ export default function GetStarted() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    fullName: "",
+    companyName: "",
     username: "",
     email: "",
     password: "",
@@ -38,8 +38,8 @@ export default function GetStarted() {
   const validateForm = () => {
     const newErrors: FormErrors = {};
 
-    if (!formData.fullName) {
-      newErrors.fullName = "Full name is required";
+    if (!formData.companyName) {
+      newErrors.companyName = "Company name is required";
     }
 
     if (!formData.username) {
@@ -149,7 +149,7 @@ export default function GetStarted() {
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-brand-lavender-light/20">
             {step === 1 ? (
               <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
-                {/* Name Input */}
+                {/* Company Name Input */}
                 <div>
                   <label className="block text-sm font-medium text-brand-text-secondary mb-2">
                     Company Name
@@ -160,21 +160,21 @@ export default function GetStarted() {
                     </div>
                     <input
                       type="text"
-                      name="fullName"
-                      value={formData.fullName}
+                      name="companyName"
+                      value={formData.companyName}
                       onChange={handleChange}
                       className={`block w-full pl-10 pr-3 py-2 border 
                               rounded-xl focus:ring-2 focus:ring-brand-accent/20 
                               transition-colors bg-white ${
-                                errors.fullName
+                                errors.companyName
                                   ? "border-red-500 focus:border-red-500"
                                   : "border-brand-lavender-light/20 focus:border-brand-accent"
                               }`}
-                      placeholder="John Doe"
+                      placeholder="Acme Inc."
                     />
-                    {errors.fullName && (
+                    {errors.companyName && (
                       <p className="mt-1 text-xs text-red-500">
-                        {errors.fullName}
+                        {errors.companyName}
                       </p>
                     )}
                   </div>

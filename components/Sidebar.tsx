@@ -18,6 +18,19 @@ import {
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 
+interface UserData {
+  id: string;
+  name: string;
+  username: string;
+  profilePicture: string | null;
+  email: string;
+}
+
+interface SidebarProps {
+  userData: UserData | null;
+  loading: boolean;
+}
+
 const menuItems = [
   { name: "Dashboard", icon: FaChartBar, path: "/app" },
   { name: "Access Keys", icon: FaKey, path: "/app/access-keys" },
@@ -27,9 +40,23 @@ const menuItems = [
   { name: "Settings", icon: FaCog, path: "/app/settings" },
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ userData, loading }: SidebarProps) => {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+
+  const UserProfile = () => (
+    <div className="flex items-center gap-3 px-4 py-2">
+      <FaUserCircle className="w-10 h-10 text-brand-text-secondary" />
+      <div>
+        <p className="font-medium text-brand-text-primary">
+          {loading ? "Loading..." : userData?.name}
+        </p>
+        <p className="text-sm text-brand-text-secondary">
+          @{loading ? "loading" : userData?.username}
+        </p>
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -71,13 +98,7 @@ const Sidebar = () => {
 
         {/* User Profile */}
         <div className="p-4 border-b border-brand-lavender-light/20">
-          <div className="flex items-center gap-3 px-4 py-2">
-            <FaUserCircle className="w-10 h-10 text-brand-text-secondary" />
-            <div>
-              <p className="font-medium text-brand-text-primary">John Doe</p>
-              <p className="text-sm text-brand-text-secondary">Company Name</p>
-            </div>
-          </div>
+          <UserProfile />
         </div>
 
         {/* Navigation */}
@@ -141,13 +162,7 @@ const Sidebar = () => {
 
         {/* User Profile */}
         <div className="p-4 border-b border-brand-lavender-light/20">
-          <div className="flex items-center gap-3 px-4 py-2">
-            <FaUserCircle className="w-10 h-10 text-brand-text-secondary" />
-            <div>
-              <p className="font-medium text-brand-text-primary">John Doe</p>
-              <p className="text-sm text-brand-text-secondary">Company Name</p>
-            </div>
-          </div>
+          <UserProfile />
         </div>
 
         {/* Navigation */}

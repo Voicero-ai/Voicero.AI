@@ -1,23 +1,23 @@
-datasource db {
-  provider = "mysql" // Replace with your database provider if needed
-  url      = env("DATABASE_URL")
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
 model User {
-  id              String           @id @default(uuid()) // UUID-based ID
+  id              String           @id @default(uuid())
   username        String           @unique
   email           String           @unique
   name            String
   password        String
-  profilePicture  String?
-  emailVerified   Boolean          @default(false)
-  emailCode       String?
-  extensions      Extension[]
   createdAt       DateTime         @default(now())
+  emailCode       String?
+  emailVerified   Boolean          @default(false)
+  profilePicture  String?
+  extensions      Extension[]
   verifiedDevices VerifiedDevice[]
 }
 
@@ -27,15 +27,19 @@ model VerifiedDevice {
   userId    String
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "VerifiedDevice_userId_fkey")
 }
 
 model Extension {
-  id             String   @id @default(uuid()) // UUID-based ID
-  type           String // e.g., "WordPress", "Shopify"
-  licenseKey     String   @unique // Auto-generated license key
-  allowedWebsite String // Allowed domain for the extension
-  stripeId       String   @unique // Stripe subscription ID for this extension
+  id             String   @id @default(uuid())
+  type           String
+  licenseKey     String   @unique
+  allowedWebsite String
+  stripeId       String   @unique
   userId         String
-  user           User     @relation(fields: [userId], references: [id])
   createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "Extension_userId_fkey")
 }
