@@ -15,12 +15,39 @@ export async function GET() {
       where: {
         userId: session.user.id,
       },
+      select: {
+        id: true,
+        url: true,
+        name: true,
+        type: true,
+        plan: true,
+        active: true,
+        renewsOn: true,
+        stripeId: true,
+        monthlyQueries: true,
+        syncFrequency: true,
+        lastSyncedAt: true,
+        createdAt: true,
+      },
       orderBy: {
         createdAt: "desc",
       },
     });
 
-    return NextResponse.json(websites);
+    // Transform data to match the UI requirements
+    const transformedWebsites = websites.map((website) => ({
+      ...website,
+      queryLimit: website.plan === "Pro" ? 50000 : 10000, // Example limits based on plan
+      content: {
+        // You can add these fields to your schema later
+        products: 0,
+        blogPosts: 0,
+        pages: 0,
+      },
+      status: website.active ? "active" : "inactive",
+    }));
+
+    return NextResponse.json(transformedWebsites);
   } catch (error) {
     console.error("Error fetching websites:", error);
     return NextResponse.json(

@@ -8,17 +8,18 @@ datasource db {
 }
 
 model User {
-  id              String           @id @default(uuid())
-  username        String           @unique
-  email           String           @unique
-  name            String
-  password        String
-  createdAt       DateTime         @default(now())
-  emailCode       String?
-  emailVerified   Boolean          @default(false)
-  profilePicture  String?
-  websites        Website[]
-  verifiedDevices VerifiedDevice[]
+  id               String           @id @default(uuid())
+  username         String           @unique
+  email            String           @unique
+  name             String
+  password         String
+  createdAt        DateTime         @default(now())
+  emailCode        String?
+  emailVerified    Boolean          @default(false)
+  profilePicture   String?
+  websites         Website[]
+  verifiedDevices  VerifiedDevice[]
+  stripeCustomerId String?          @unique
 }
 
 model Website {
@@ -28,15 +29,16 @@ model Website {
   userId         String
   type           String // The type of website (e.g., "shopify", "wordpress", "other")
   createdAt      DateTime    @default(now())
-  renewsOn       DateTime // Monthly subscription renewal date
+  renewsOn       DateTime? // Monthly subscription renewal date
   plan           String // Subscription plan type
-  stripeId       String      @unique // Stripe subscription ID
+  stripeId       String?     @unique // Stripe subscription ID
   active         Boolean     @default(true)
   syncFrequency  String      @default("daily") // daily, weekly, monthly
   lastSyncedAt   DateTime?
   monthlyQueries Int         @default(0)
   accessKeys     AccessKey[]
   user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  queryLimit     Int         @default(10000)
 
   @@index([userId])
 }

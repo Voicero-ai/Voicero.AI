@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaKey,
@@ -10,55 +10,47 @@ import {
   FaTimes,
   FaGlobe,
 } from "react-icons/fa";
+import { toast } from "sonner";
 
 interface AccessKey {
   id: string;
   name: string;
-  websiteDomain: string;
+  key?: string;
   createdAt: string;
-  lastUsed?: string;
 }
 
 interface Website {
   id: string;
-  domain: string;
-  type: "WordPress" | "Shopify";
-  activeKeys: number;
+  url: string;
+  type: string;
+  accessKeys: AccessKey[];
 }
 
-const websites: Website[] = [
-  { id: "1", domain: "mystore.shopify.com", type: "Shopify", activeKeys: 2 },
-  { id: "2", domain: "myblog.wordpress.com", type: "WordPress", activeKeys: 1 },
-];
-
-const accessKeys: AccessKey[] = [
-  {
-    id: "key1",
-    name: "Production Key",
-    websiteDomain: "mystore.shopify.com",
-    createdAt: "2024-01-01",
-    lastUsed: "2024-01-15",
-  },
-  {
-    id: "key2",
-    name: "Development Key",
-    websiteDomain: "mystore.shopify.com",
-    createdAt: "2024-01-10",
-  },
-  {
-    id: "key3",
-    name: "Main Key",
-    websiteDomain: "myblog.wordpress.com",
-    createdAt: "2024-01-05",
-    lastUsed: "2024-01-14",
-  },
-];
-
 export default function AccessKeys() {
+  const [websites, setWebsites] = useState<Website[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedWebsite, setSelectedWebsite] = useState<Website | null>(null);
   const [newKeyName, setNewKeyName] = useState("");
   const [newKey, setNewKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchWebsites();
+  }, []);
+
+  const fetchWebsites = async () => {
+    try {
+      const response = await fetch("/api/access-keys");
+      if (!response.ok) throw new Error("Failed to fetch websites");
+      const data = await response.json();
+      setWebsites(data);
+    } catch (error) {
+      toast.error("Failed to load websites");
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleCreateKey = (website: Website) => {
     setSelectedWebsite(website);
@@ -67,12 +59,57 @@ export default function AccessKeys() {
     setIsCreateModalOpen(true);
   };
 
-  const handleGenerateKey = () => {
-    if (!newKeyName.trim()) return;
-    // Simulate key generation
-    const key = `vk_${Math.random().toString(36).substring(2, 15)}`;
-    setNewKey(key);
+  const handleGenerateKey = async () => {
+    if (!newKeyName.trim() || !selectedWebsite) return;
+
+    try {
+      const response = await fetch("/api/access-keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          websiteId: selectedWebsite.id,
+          name: newKeyName,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create key");
+      }
+
+      const data = await response.json();
+      setNewKey(data.key);
+      await fetchWebsites(); // Refresh the list
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create access key");
+    }
   };
+
+  const handleDeleteKey = async (keyId: string) => {
+    if (!confirm("Are you sure you want to delete this access key?")) return;
+
+    try {
+      const response = await fetch("/api/access-keys", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to delete key");
+      }
+
+      toast.success("Access key deleted");
+      await fetchWebsites(); // Refresh the list
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete access key");
+    }
+  };
+
+  if (isLoading) {
+    return <div className="max-w-4xl mx-auto">Loading...</div>;
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -98,10 +135,10 @@ export default function AccessKeys() {
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-brand-text-primary">
-                  {website.domain}
+                  {website.url}
                 </h2>
                 <p className="text-sm text-brand-text-secondary">
-                  {website.activeKeys} of 5 keys active
+                  {website.accessKeys.length} of 5 keys active
                 </p>
               </div>
             </div>
@@ -109,7 +146,7 @@ export default function AccessKeys() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => handleCreateKey(website)}
-              disabled={website.activeKeys >= 5}
+              disabled={website.accessKeys.length >= 5}
               className="px-4 py-2 bg-gradient-to-r from-brand-accent to-brand-lavender-dark 
                        text-white rounded-xl shadow-lg shadow-brand-accent/20
                        hover:shadow-xl hover:shadow-brand-accent/30 transition-shadow
@@ -122,41 +159,36 @@ export default function AccessKeys() {
 
           <div className="p-6">
             <div className="space-y-4">
-              {accessKeys
-                .filter((key) => key.websiteDomain === website.domain)
-                .map((key) => (
-                  <div
-                    key={key.id}
-                    className="flex items-center justify-between p-4 border border-brand-lavender-light/20 rounded-xl"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 bg-brand-lavender-light/10 rounded-lg">
-                        <FaKey className="w-4 h-4 text-brand-accent" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-brand-text-primary">
-                          {key.name}
-                        </h3>
-                        <p className="text-sm text-brand-text-secondary">
-                          Created on{" "}
-                          {new Date(key.createdAt).toLocaleDateString()}
-                          {key.lastUsed &&
-                            ` • Last used ${new Date(
-                              key.lastUsed
-                            ).toLocaleDateString()}`}
-                        </p>
-                      </div>
+              {website.accessKeys.map((key) => (
+                <div
+                  key={key.id}
+                  className="flex items-center justify-between p-4 border border-brand-lavender-light/20 rounded-xl"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 bg-brand-lavender-light/10 rounded-lg">
+                      <FaKey className="w-4 h-4 text-brand-accent" />
                     </div>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="p-2 text-red-500 hover:text-red-600 
-                               transition-colors rounded-lg hover:bg-red-50"
-                    >
-                      <FaTrash className="w-4 h-4" />
-                    </motion.button>
+                    <div>
+                      <h3 className="font-medium text-brand-text-primary">
+                        {key.name || "Default"}
+                      </h3>
+                      <p className="text-sm text-brand-text-secondary">
+                        Created on{" "}
+                        {new Date(key.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
-                ))}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleDeleteKey(key.id)}
+                    className="p-2 text-red-500 hover:text-red-600 
+                             transition-colors rounded-lg hover:bg-red-50"
+                  >
+                    <FaTrash className="w-4 h-4" />
+                  </motion.button>
+                </div>
+              ))}
             </div>
           </div>
         </section>

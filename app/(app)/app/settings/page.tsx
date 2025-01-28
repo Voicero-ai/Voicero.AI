@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FaUser,
   FaEnvelope,
@@ -10,6 +10,7 @@ import {
   FaCamera,
   FaTrash,
   FaExternalLinkAlt,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/UserContext";
@@ -34,6 +35,60 @@ interface UserProfile {
   profilePicture: string | null;
 }
 
+const DeleteWebsiteModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  websiteName,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  websiteName: string;
+}) => (
+  <AnimatePresence>
+    {isOpen && (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 
+                   w-full max-w-md bg-white rounded-xl shadow-xl z-50 p-6"
+      >
+        <div className="flex items-center gap-4 text-red-600 mb-4">
+          <FaExclamationTriangle className="w-6 h-6" />
+          <h3 className="text-xl font-bold">Delete Website</h3>
+        </div>
+
+        <p className="text-brand-text-secondary mb-2">
+          Are you sure you want to delete{" "}
+          <span className="font-semibold">{websiteName}</span>?
+        </p>
+        <p className="text-sm text-red-600 mb-6">
+          This action cannot be undone. All data will be permanently deleted.
+        </p>
+
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-brand-text-secondary hover:text-brand-text-primary 
+                     transition-colors rounded-lg"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white 
+                     rounded-lg transition-colors"
+          >
+            Delete Website
+          </button>
+        </div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
 export default function Settings() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
@@ -45,6 +100,8 @@ export default function Settings() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { user, updateUser } = useUser();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [websiteToDelete, setWebsiteToDelete] = useState<Website | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,6 +113,9 @@ export default function Settings() {
 
         // Fetch websites
         const websitesRes = await fetch("/api/websites");
+        if (!websitesRes.ok) {
+          throw new Error("Failed to fetch websites");
+        }
         const websitesData = await websitesRes.json();
         setWebsites(websitesData);
       } catch (error) {
@@ -169,8 +229,79 @@ export default function Settings() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!websiteToDelete) return;
+    try {
+      const response = await fetch(`/api/websites/delete`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: websiteToDelete.id }),
+      });
+
+      if (!response.ok) throw new Error("Failed to delete website");
+
+      // Update local state to remove the deleted website
+      setWebsites(websites.filter((w) => w.id !== websiteToDelete.id));
+      setShowDeleteModal(false);
+      setWebsiteToDelete(null);
+    } catch (error) {
+      console.error("Error deleting website:", error);
+    }
+  };
+
   if (isLoading) {
-    return <div className="text-center py-8">Loading...</div>;
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="animate-pulse space-y-8">
+          {/* Header skeleton */}
+          <div className="space-y-2">
+            <div className="h-8 w-48 bg-brand-lavender-light/20 rounded-lg"></div>
+            <div className="h-4 w-96 bg-brand-lavender-light/20 rounded-lg"></div>
+          </div>
+
+          {/* Profile section skeleton */}
+          <div className="bg-white rounded-xl shadow-sm border border-brand-lavender-light/20 overflow-hidden">
+            <div className="p-6 border-b border-brand-lavender-light/20">
+              <div className="h-6 w-40 bg-brand-lavender-light/20 rounded-lg"></div>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-6">
+                <div className="w-24 h-24 rounded-full bg-brand-lavender-light/20"></div>
+                <div className="space-y-2">
+                  <div className="h-5 w-32 bg-brand-lavender-light/20 rounded-lg"></div>
+                  <div className="h-4 w-48 bg-brand-lavender-light/20 rounded-lg"></div>
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="h-4 w-24 bg-brand-lavender-light/20 rounded-lg"></div>
+                    <div className="h-10 w-full bg-brand-lavender-light/20 rounded-xl"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Websites section skeleton */}
+          <div className="bg-white rounded-xl shadow-sm border border-brand-lavender-light/20 overflow-hidden">
+            <div className="p-6 border-b border-brand-lavender-light/20">
+              <div className="h-6 w-48 bg-brand-lavender-light/20 rounded-lg"></div>
+            </div>
+            <div className="p-6">
+              {[1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="h-24 w-full bg-brand-lavender-light/20 rounded-xl mb-4"
+                ></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -410,11 +541,13 @@ export default function Settings() {
                         {site.url}
                       </h3>
                       <p className="text-sm text-brand-text-secondary">
-                        {site.type} • {site.plan} Plan
+                        {site.name} • {site.type} • {site.plan} Plan
                       </p>
-                      <p className="text-sm text-brand-text-secondary">
-                        Renews on {new Date(site.renewsOn).toLocaleDateString()}
-                      </p>
+                      {site.plan === "Free" ? null : (
+                        <p className="text-sm text-brand-text-secondary">
+                          Renews on {new Date(site.renewsOn).toLocaleDateString()}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3 ml-auto">
@@ -423,6 +556,11 @@ export default function Settings() {
                       whileTap={{ scale: 0.98 }}
                       className="px-3 py-1.5 text-sm text-brand-accent border border-brand-accent/20 
                                hover:bg-brand-accent/5 transition-colors rounded-lg"
+                      onClick={() =>
+                        router.push(
+                          `/app/websites/website?websiteId=${site.id}`
+                        )
+                      }
                     >
                       Manage Subscription
                     </motion.button>
@@ -431,6 +569,9 @@ export default function Settings() {
                       whileTap={{ scale: 0.95 }}
                       className="p-2 text-brand-text-secondary hover:text-brand-accent 
                                transition-colors rounded-lg hover:bg-brand-lavender-light/5"
+                      onClick={() =>
+                        window.open(`${site.url}`, "_blank")
+                      }
                     >
                       <FaExternalLinkAlt className="w-4 h-4" />
                     </motion.button>
@@ -439,6 +580,10 @@ export default function Settings() {
                       whileTap={{ scale: 0.95 }}
                       className="p-2 text-red-500 hover:text-red-600 
                                transition-colors rounded-lg hover:bg-red-50"
+                      onClick={() => {
+                        setWebsiteToDelete(site);
+                        setShowDeleteModal(true);
+                      }}
                     >
                       <FaTrash className="w-4 h-4" />
                     </motion.button>
@@ -469,6 +614,16 @@ export default function Settings() {
           )}
         </div>
       </section>
+
+      <DeleteWebsiteModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setWebsiteToDelete(null);
+        }}
+        onConfirm={handleDelete}
+        websiteName={websiteToDelete?.url || ""}
+      />
     </div>
   );
 }

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `Website` ADD COLUMN `queryLimit` INTEGER NOT NULL DEFAULT 10000;
