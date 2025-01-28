@@ -17,8 +17,39 @@ model User {
   emailCode       String?
   emailVerified   Boolean          @default(false)
   profilePicture  String?
-  extensions      Extension[]
+  websites        Website[]
   verifiedDevices VerifiedDevice[]
+}
+
+model Website {
+  id             String      @id @default(uuid())
+  url            String // The allowed website URL
+  name           String? // Optional name for the website
+  userId         String
+  type           String // The type of website (e.g., "shopify", "wordpress", "other")
+  createdAt      DateTime    @default(now())
+  renewsOn       DateTime // Monthly subscription renewal date
+  plan           String // Subscription plan type
+  stripeId       String      @unique // Stripe subscription ID
+  active         Boolean     @default(true)
+  syncFrequency  String      @default("daily") // daily, weekly, monthly
+  lastSyncedAt   DateTime?
+  monthlyQueries Int         @default(0)
+  accessKeys     AccessKey[]
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AccessKey {
+  id        String   @id @default(uuid())
+  name      String?
+  key       String   @unique
+  websiteId String
+  createdAt DateTime @default(now())
+  website   Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId])
 }
 
 model VerifiedDevice {
@@ -28,18 +59,5 @@ model VerifiedDevice {
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId], map: "VerifiedDevice_userId_fkey")
-}
-
-model Extension {
-  id             String   @id @default(uuid())
-  type           String
-  licenseKey     String   @unique
-  allowedWebsite String
-  stripeId       String   @unique
-  userId         String
-  createdAt      DateTime @default(now())
-  user           User     @relation(fields: [userId], references: [id])
-
-  @@index([userId], map: "Extension_userId_fkey")
+  @@index([userId])
 }

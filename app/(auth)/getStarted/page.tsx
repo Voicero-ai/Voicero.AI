@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { FaEnvelope, FaLock, FaUser } from "react-icons/fa";
+import { FaEnvelope, FaLock, FaUser, FaEye, FaEyeSlash } from "react-icons/fa";
 import Link from "next/link";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
@@ -13,6 +13,7 @@ interface FormData {
   username: string;
   email: string;
   password: string;
+  confirmPassword: string;
 }
 
 interface FormErrors {
@@ -20,6 +21,7 @@ interface FormErrors {
   username?: string;
   email?: string;
   password?: string;
+  confirmPassword?: string;
   submit?: string;
 }
 
@@ -31,9 +33,12 @@ export default function GetStarted() {
     username: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [step, setStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validateForm = () => {
     const newErrors: FormErrors = {};
@@ -65,6 +70,12 @@ export default function GetStarted() {
       newErrors.password = "Password must contain at least 1 number";
     } else if (!/(?=.*[!@#$%^&*])/.test(formData.password)) {
       newErrors.password = "Password must contain at least 1 special character";
+    }
+
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = "Please confirm your password";
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
     }
 
     setErrors(newErrors);
@@ -252,25 +263,78 @@ export default function GetStarted() {
                       <FaLock className="h-5 w-5 text-brand-text-secondary/50" />
                     </div>
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
-                      className={`block w-full pl-10 pr-3 py-2 border 
-                              rounded-xl focus:ring-2 focus:ring-brand-accent/20 
-                              transition-colors bg-white ${
-                                errors.password
-                                  ? "border-red-500 focus:border-red-500"
-                                  : "border-brand-lavender-light/20 focus:border-brand-accent"
-                              }`}
+                      className={`block w-full pl-10 pr-12 py-2 border rounded-xl focus:ring-2 
+                                focus:ring-brand-accent/20 transition-colors bg-white ${
+                                  errors.password
+                                    ? "border-red-500 focus:border-red-500"
+                                    : "border-brand-lavender-light/20 focus:border-brand-accent"
+                                }`}
                       placeholder="••••••••"
                     />
-                    {errors.password && (
-                      <p className="mt-1 text-xs text-red-500">
-                        {errors.password}
-                      </p>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-brand-text-secondary/50 hover:text-brand-text-secondary"
+                    >
+                      {showPassword ? (
+                        <FaEyeSlash className="h-5 w-5" />
+                      ) : (
+                        <FaEye className="h-5 w-5" />
+                      )}
+                    </button>
                   </div>
+                  {errors.password && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.password}
+                    </p>
+                  )}
+                </div>
+
+                {/* Confirm Password Input */}
+                <div>
+                  <label className="block text-sm font-medium text-brand-text-secondary mb-2">
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <FaLock className="h-5 w-5 text-brand-text-secondary/50" />
+                    </div>
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      className={`block w-full pl-10 pr-12 py-2 border rounded-xl focus:ring-2 
+                                focus:ring-brand-accent/20 transition-colors bg-white ${
+                                  errors.confirmPassword
+                                    ? "border-red-500 focus:border-red-500"
+                                    : "border-brand-lavender-light/20 focus:border-brand-accent"
+                                }`}
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-brand-text-secondary/50 hover:text-brand-text-secondary"
+                    >
+                      {showConfirmPassword ? (
+                        <FaEyeSlash className="h-5 w-5" />
+                      ) : (
+                        <FaEye className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.confirmPassword}
+                    </p>
+                  )}
                 </div>
 
                 {/* Sign Up Button */}
