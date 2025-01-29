@@ -1,16 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   FaVolumeUp,
   FaKeyboard,
-  FaExternalLinkAlt,
-  FaArrowDown,
-  FaCopy,
-  FaCode,
-  FaChevronDown,
   FaChevronRight,
   FaFilter,
   FaSort,
@@ -37,13 +31,6 @@ interface Chat {
   timestamp: string;
 }
 
-interface Website {
-  id: string;
-  domain: string;
-  chats: Chat[];
-  lastChatAt: string;
-}
-
 interface ChatSession {
   id: string;
   startedAt: string;
@@ -53,110 +40,12 @@ interface ChatSession {
   website: {
     id: string;
     domain: string;
+    name?: string;
   };
 }
 
 type SortOption = "recent" | "oldest" | "longest" | "shortest";
 type TimeRange = "all" | "last20" | "today" | "week" | "month";
-
-const mockWebsites: Website[] = [
-  {
-    id: "1",
-    domain: "mystore.shopify.com",
-    lastChatAt: "2024-01-15T16:10:00Z",
-    chats: [
-      {
-        id: "1",
-        type: "voice",
-        query: "Where can I find pricing information?",
-        response: {
-          type: "redirect",
-          content: "I'll take you to our pricing page",
-          metadata: { url: "/pricing" },
-          timestamp: "2024-01-15T14:30:00Z",
-        },
-        timestamp: "2024-01-15T14:29:55Z",
-      },
-      {
-        id: "1",
-        type: "voice",
-        query: "Where can I find pricing information?",
-        response: {
-          type: "redirect",
-          content: "I'll take you to our pricing page",
-          metadata: { url: "/pricing" },
-          timestamp: "2024-01-15T14:30:00Z",
-        },
-        timestamp: "2024-01-15T14:29:55Z",
-      },
-      // ... more chats (hidden initially)
-    ],
-  },
-  {
-    id: "2",
-    domain: "myblog.wordpress.com",
-    lastChatAt: "2024-01-15T15:20:00Z",
-    chats: [
-      {
-        id: "3",
-        type: "text",
-        query: "Get me product information",
-        response: {
-          type: "answer",
-          content: "Here's the product information you requested",
-          metadata: {
-            json: {
-              name: "Premium Widget",
-              price: 99.99,
-              features: ["Feature 1", "Feature 2"],
-              availability: true,
-            },
-          },
-          timestamp: "2024-01-15T16:10:00Z",
-        },
-        timestamp: "2024-01-15T16:09:45Z",
-      },
-      // ... more chats (hidden initially)
-    ],
-  },
-];
-
-const mockChatSessions: ChatSession[] = [
-  {
-    id: "session1",
-    startedAt: "2024-01-15T16:10:00Z",
-    type: "voice",
-    initialQuery: "I need help finding the right product",
-    messageCount: 5,
-    website: {
-      id: "1",
-      domain: "mystore.shopify.com",
-    },
-  },
-  {
-    id: "session2",
-    startedAt: "2024-01-15T15:45:00Z",
-    type: "text",
-    initialQuery: "What's included in the Pro plan?",
-    messageCount: 3,
-    website: {
-      id: "1",
-      domain: "mystore.shopify.com",
-    },
-  },
-  {
-    id: "session3",
-    startedAt: "2024-01-15T14:30:00Z",
-    type: "voice",
-    initialQuery: "How do I contact support?",
-    messageCount: 2,
-    website: {
-      id: "2",
-      domain: "myblog.wordpress.com",
-    },
-  },
-  // Add more sessions...
-];
 
 export default function Chats() {
   const searchParams = useSearchParams();
@@ -175,9 +64,72 @@ export default function Chats() {
   const [selectedSort, setSelectedSort] = useState<SortOption>("recent");
   const [selectedTime, setSelectedTime] = useState<TimeRange>("all");
 
-  const filteredSessions = websiteId
-    ? mockChatSessions.filter((session) => session.website.id === websiteId)
-    : mockChatSessions;
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [websites, setWebsites] = useState<
+    { id: string; url: string; name?: string }[]
+  >([]);
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        setLoading(true);
+        const params = new URLSearchParams();
+        if (websiteId) params.append("websiteId", websiteId);
+        if (selectedType !== "all") params.append("type", selectedType);
+        if (selectedSort) params.append("sort", selectedSort);
+        if (selectedTime !== "all") params.append("timeRange", selectedTime);
+
+        const response = await fetch(`/api/chats?${params.toString()}`);
+        if (!response.ok) throw new Error("Failed to fetch chat sessions");
+
+        const data = await response.json();
+        setSessions(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Something went wrong");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSessions();
+  }, [websiteId, selectedType, selectedSort, selectedTime]);
+
+  useEffect(() => {
+    const fetchWebsites = async () => {
+      try {
+        const response = await fetch("/api/websites");
+        if (!response.ok) throw new Error("Failed to fetch websites");
+        const data = await response.json();
+        setWebsites(data);
+      } catch (err) {
+        console.error("Failed to fetch websites:", err);
+      }
+    };
+
+    fetchWebsites();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto p-8">
+        <div className="animate-pulse space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-32 bg-gray-200 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto p-8">
+        <div className="bg-red-50 text-red-500 p-4 rounded-xl">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -202,7 +154,7 @@ export default function Chats() {
             <span className="text-sm text-brand-text-primary">
               {selectedWebsite === "all"
                 ? "All Websites"
-                : mockWebsites.find((w) => w.id === selectedWebsite)?.domain}
+                : websites.find((w) => w.id === selectedWebsite)?.url}
             </span>
             <FaCaretDown className="w-4 h-4 text-brand-text-secondary" />
           </button>
@@ -223,7 +175,7 @@ export default function Chats() {
               >
                 All Websites
               </button>
-              {mockWebsites.map((website) => (
+              {websites.map((website) => (
                 <button
                   key={website.id}
                   onClick={() => {
@@ -237,7 +189,7 @@ export default function Chats() {
                                : "text-brand-text-primary"
                            }`}
                 >
-                  {website.domain}
+                  {website.url}
                 </button>
               ))}
             </div>
@@ -388,50 +340,64 @@ export default function Chats() {
       </div>
 
       <div className="space-y-4">
-        {filteredSessions.map((session) => (
-          <div
-            key={session.id}
-            className="bg-white rounded-xl shadow-sm border border-brand-lavender-light/20 p-6 hover:border-brand-lavender-light/40 transition-colors"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-brand-lavender-light/10 rounded-lg">
-                  {session.type === "voice" ? (
-                    <FaVolumeUp className="w-5 h-5 text-brand-accent" />
-                  ) : (
-                    <FaKeyboard className="w-5 h-5 text-brand-accent" />
-                  )}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium text-brand-text-secondary">
-                      {session.website.domain}
-                    </span>
-                    <span className="text-xs text-brand-text-secondary">•</span>
-                    <span className="text-sm text-brand-text-secondary">
-                      {new Date(session.startedAt).toLocaleString()}
-                    </span>
-                  </div>
-                  <p className="text-brand-text-primary font-medium mb-2">
-                    {session.initialQuery}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-brand-text-secondary">
-                      {session.messageCount} messages in conversation
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <Link
-                href={`/app/chats/session?id=${session.id}`}
-                className="flex items-center gap-1 text-brand-accent hover:text-brand-accent/80 transition-colors text-sm"
-              >
-                View conversation
-                <FaChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
+        {sessions.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-xl border border-brand-lavender-light/20">
+            <h3 className="text-lg font-medium text-brand-text-primary mb-2">
+              No chat history yet
+            </h3>
+            <p className="text-brand-text-secondary">
+              Chat history will appear here once you start conversations with
+              your websites.
+            </p>
           </div>
-        ))}
+        ) : (
+          sessions.map((session) => (
+            <div
+              key={session.id}
+              className="bg-white rounded-xl shadow-sm border border-brand-lavender-light/20 p-6 hover:border-brand-lavender-light/40 transition-colors"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                  <div className="p-2 bg-brand-lavender-light/10 rounded-lg">
+                    {session.type === "voice" ? (
+                      <FaVolumeUp className="w-5 h-5 text-brand-accent" />
+                    ) : (
+                      <FaKeyboard className="w-5 h-5 text-brand-accent" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-medium text-brand-text-secondary">
+                        {session.website.domain}
+                      </span>
+                      <span className="text-xs text-brand-text-secondary">
+                        •
+                      </span>
+                      <span className="text-sm text-brand-text-secondary">
+                        {new Date(session.startedAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-brand-text-primary font-medium mb-2">
+                      {session.initialQuery}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-brand-text-secondary">
+                        {session.messageCount} messages in conversation
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <Link
+                  href={`/app/chats/session?id=${session.id}`}
+                  className="flex items-center gap-1 text-brand-accent hover:text-brand-accent/80 transition-colors text-sm"
+                >
+                  View conversation
+                  <FaChevronRight className="w-3 h-3" />
+                </Link>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

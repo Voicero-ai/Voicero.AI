@@ -23,22 +23,31 @@ model User {
 }
 
 model Website {
-  id             String      @id @default(uuid())
-  url            String // The allowed website URL
-  name           String? // Optional name for the website
-  userId         String
-  type           String // The type of website (e.g., "shopify", "wordpress", "other")
-  createdAt      DateTime    @default(now())
-  renewsOn       DateTime? // Monthly subscription renewal date
-  plan           String // Subscription plan type
-  stripeId       String?     @unique // Stripe subscription ID
-  active         Boolean     @default(true)
-  syncFrequency  String      @default("daily") // daily, weekly, monthly
-  lastSyncedAt   DateTime?
-  monthlyQueries Int         @default(0)
-  accessKeys     AccessKey[]
-  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  queryLimit     Int         @default(10000)
+  id              String             @id @default(uuid())
+  url             String // The allowed website URL
+  name            String? // Optional name for the website
+  userId          String
+  type            String // The type of website (e.g., "shopify", "wordpress", "other")
+  createdAt       DateTime           @default(now())
+  renewsOn        DateTime? // Monthly subscription renewal date
+  plan            String // Subscription plan type
+  stripeId        String?            @unique // Stripe subscription ID
+  active          Boolean            @default(true)
+  syncFrequency   String             @default("daily") // daily, weekly, monthly
+  lastSyncedAt    DateTime?
+  monthlyQueries  Int                @default(0)
+  accessKeys      AccessKey[]
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  queryLimit      Int                @default(10000)
+  posts           WordpressPost[]
+  pages           WordpressPage[]
+  products        WordpressProduct[]
+  shopifyStoreId  String?            @unique
+  shopifyPages    ShopifyPage[]
+  shopifyBlog     ShopifyBlog[]
+  shopifyProducts ShopifyProduct[]
+  aiAssistantId   String? // OpenAI Assistant ID
+  aiThreads       AiThread[]
 
   @@index([userId])
 }
@@ -62,4 +71,325 @@ model VerifiedDevice {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model WordpressPost {
+  id               Int                    @id @default(autoincrement())
+  wpId             Int                    @unique // WordPress Post ID
+  title            String
+  slug             String                 @unique
+  content          String                 @db.Text
+  excerpt          String?                @db.Text
+  link             String
+  featuredMediaId  Int?
+  featuredMedia    WordpressMedia?        @relation("PostFeaturedMedia", fields: [featuredMediaId], references: [wpId])
+  authorId         Int?
+  author           WordpressAuthor?       @relation(fields: [authorId], references: [wpId])
+  categories       WordpressCategory[]
+  tags             WordpressTag[]
+  comments         WordpressComment[]
+  createdAt        DateTime
+  updatedAt        DateTime
+  customFields     WordpressCustomField[]
+  WordpressMedia   WordpressMedia?        @relation("PostAttachedMedia", fields: [wordpressMediaId], references: [id])
+  wordpressMediaId Int?
+  website          Website?               @relation(fields: [websiteId], references: [id])
+  websiteId        String?
+}
+
+model WordpressPage {
+  id              Int             @id @default(autoincrement())
+  wpId            Int             @unique // WordPress Page ID
+  title           String
+  slug            String          @unique
+  content         String          @db.Text
+  link            String
+  featuredMediaId Int?
+  featuredMedia   WordpressMedia? @relation("PageFeaturedMedia", fields: [featuredMediaId], references: [wpId])
+  createdAt       DateTime
+  updatedAt       DateTime
+  website         Website?        @relation(fields: [websiteId], references: [id])
+  websiteId       String?
+}
+
+model WordpressProduct {
+  id               Int                        @id @default(autoincrement())
+  wpId             Int                        @unique // WooCommerce Product ID
+  name             String
+  slug             String                     @unique
+  permalink        String
+  price            Float
+  regularPrice     Float?
+  salePrice        Float?
+  stockQuantity    Int?
+  description      String                     @db.Text
+  shortDescription String?                    @db.Text
+  images           WordpressMedia[]
+  categories       WordpressProductCategory[]
+  tags             WordpressProductTag[]
+  reviews          WordpressReview[]
+  createdAt        DateTime
+  updatedAt        DateTime
+  customFields     WordpressCustomField[]
+  website          Website?                   @relation(fields: [websiteId], references: [id])
+  websiteId        String?
+}
+
+model WordpressMedia {
+  id            Int                @id @default(autoincrement())
+  wpId          Int                @unique // WordPress Media ID
+  title         String?
+  sourceUrl     String
+  altText       String?
+  caption       String?
+  posts         WordpressPost[]    @relation("PostFeaturedMedia")
+  attachedPosts WordpressPost[]    @relation("PostAttachedMedia")
+  pages         WordpressPage[]    @relation("PageFeaturedMedia")
+  products      WordpressProduct[]
+}
+
+model WordpressAuthor {
+  id          Int             @id @default(autoincrement())
+  wpId        Int             @unique // WordPress Author ID
+  name        String
+  slug        String          @unique
+  link        String
+  description String?         @db.Text
+  posts       WordpressPost[]
+}
+
+model WordpressCategory {
+  id          Int             @id @default(autoincrement())
+  wpId        Int             @unique // WordPress Category ID
+  name        String
+  slug        String          @unique
+  description String?
+  posts       WordpressPost[]
+}
+
+model WordpressTag {
+  id    Int             @id @default(autoincrement())
+  wpId  Int             @unique // WordPress Tag ID
+  name  String
+  slug  String          @unique
+  posts WordpressPost[]
+}
+
+model WordpressProductCategory {
+  id       Int                @id @default(autoincrement())
+  wpId     Int                @unique // WooCommerce Category ID
+  name     String
+  slug     String             @unique
+  products WordpressProduct[]
+}
+
+model WordpressProductTag {
+  id       Int                @id @default(autoincrement())
+  wpId     Int                @unique // WooCommerce Tag ID
+  name     String
+  slug     String             @unique
+  products WordpressProduct[]
+}
+
+model WordpressComment {
+  id          Int                @id @default(autoincrement())
+  wpId        Int                @unique // WordPress Comment ID
+  postId      Int
+  post        WordpressPost      @relation(fields: [postId], references: [wpId])
+  authorName  String
+  authorEmail String
+  content     String             @db.Text
+  date        DateTime
+  status      String // approved, pending, spam
+  parentId    Int? // Parent comment for threading
+  parent      WordpressComment?  @relation("CommentToComment", fields: [parentId], references: [wpId])
+  children    WordpressComment[] @relation("CommentToComment")
+}
+
+model WordpressReview {
+  id            Int              @id @default(autoincrement())
+  wpId          Int              @unique // WooCommerce Review ID
+  productId     Int
+  product       WordpressProduct @relation(fields: [productId], references: [wpId])
+  reviewer      String
+  reviewerEmail String
+  review        String           @db.Text
+  rating        Int
+  date          DateTime
+  verified      Boolean
+}
+
+model WordpressCustomField {
+  id        Int               @id @default(autoincrement())
+  wpId      Int               @unique
+  postId    Int?
+  productId Int?
+  key       String
+  value     String            @db.Text
+  post      WordpressPost?    @relation(fields: [postId], references: [wpId])
+  product   WordpressProduct? @relation(fields: [productId], references: [wpId])
+}
+
+model ShopifyStore {
+  id        String   @id @default(uuid())
+  shopId    Int      @unique // Shopify Store ID
+  name      String
+  email     String
+  domain    String
+  currency  String
+  timezone  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  websiteId String?
+}
+
+model ShopifyProduct {
+  id          String                  @id @default(uuid())
+  shopifyId   Int                     @unique // Shopify Product ID
+  title       String
+  handle      String                  @unique
+  vendor      String
+  productType String
+  description String                  @db.Text
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  images      ShopifyMedia[]
+  variants    ShopifyProductVariant[]
+  reviews     ShopifyReview[]
+  website     Website?                @relation(fields: [websiteId], references: [id])
+  websiteId   String?
+}
+
+model ShopifyProductVariant {
+  id        String         @id @default(uuid())
+  shopifyId Int            @unique // Shopify Variant ID
+  title     String
+  price     Float
+  sku       String?
+  inventory Int?
+  productId String
+  product   ShopifyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ShopifyMedia {
+  id        String          @id @default(uuid())
+  shopifyId Int             @unique // Shopify Media ID
+  url       String
+  altText   String?
+  caption   String?
+  productId String?
+  product   ShopifyProduct? @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ShopifyReview {
+  id        String         @id @default(uuid())
+  shopifyId Int            @unique // Shopify Review ID (from external app like Judge.me)
+  rating    Int
+  title     String
+  body      String         @db.Text
+  reviewer  String
+  verified  Boolean
+  createdAt DateTime       @default(now())
+  productId String
+  product   ShopifyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ShopifyDiscount {
+  id         String    @id @default(uuid())
+  shopifyId  Int       @unique // Shopify Discount ID
+  title      String
+  valueType  String // "percentage" or "fixed_amount"
+  value      Float
+  targetType String // "line_item" or "shipping_line"
+  startsAt   DateTime
+  endsAt     DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model ShopifyGiftCard {
+  id        String    @id @default(uuid())
+  shopifyId Int       @unique // Shopify Gift Card ID
+  code      String    @unique
+  balance   Float
+  currency  String
+  expiresOn DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model ShopifyPage {
+  id        String   @id @default(uuid())
+  shopifyId Int      @unique // Shopify Page ID
+  title     String
+  handle    String   @unique
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  website   Website? @relation(fields: [websiteId], references: [id])
+  websiteId String?
+}
+
+model ShopifyBlog {
+  id        String            @id @default(uuid())
+  shopifyId Int               @unique // Shopify Blog ID
+  title     String
+  handle    String            @unique
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  posts     ShopifyBlogPost[]
+  website   Website?          @relation(fields: [websiteId], references: [id])
+  websiteId String?
+}
+
+model ShopifyBlogPost {
+  id        String           @id @default(uuid())
+  shopifyId Int              @unique // Shopify Blog Post ID
+  title     String
+  handle    String           @unique
+  content   String           @db.Text
+  author    String
+  image     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  blogId    String
+  blog      ShopifyBlog      @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  comments  ShopifyComment[]
+}
+
+model ShopifyComment {
+  id        String          @id @default(uuid())
+  shopifyId Int             @unique // Shopify Comment ID
+  body      String          @db.Text
+  author    String
+  email     String?
+  status    String // "approved", "pending", "spam"
+  createdAt DateTime        @default(now())
+  postId    String
+  post      ShopifyBlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model AiThread {
+  id            String      @id @default(uuid())
+  threadId      String // OpenAI Thread ID
+  websiteId     String
+  website       Website     @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  title         String? // Optional thread title
+  createdAt     DateTime    @default(now())
+  lastMessageAt DateTime    @default(now())
+  messages      AiMessage[]
+
+  @@index([websiteId])
+}
+
+model AiMessage {
+  id           String   @id @default(uuid())
+  threadId     String
+  thread       AiThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  role         String // 'assistant' or 'user'
+  content      String   @db.Text
+  pageUrl      String? // URL to redirect to (if provided by AI)
+  scrollToText String? // Text to scroll to on page (if provided by AI)
+  createdAt    DateTime @default(now())
+
+  @@index([threadId])
 }

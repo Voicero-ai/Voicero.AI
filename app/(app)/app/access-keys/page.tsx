@@ -33,6 +33,7 @@ export default function AccessKeys() {
   const [selectedWebsite, setSelectedWebsite] = useState<Website | null>(null);
   const [newKeyName, setNewKeyName] = useState("");
   const [newKey, setNewKey] = useState<string | null>(null);
+  const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchWebsites();
@@ -107,6 +108,23 @@ export default function AccessKeys() {
     }
   };
 
+  const toggleKeyVisibility = (keyId: string) => {
+    setVisibleKeys((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(keyId)) {
+        newSet.delete(keyId);
+      } else {
+        newSet.add(keyId);
+      }
+      return newSet;
+    });
+  };
+
+  const copyKey = (key: string) => {
+    navigator.clipboard.writeText(key);
+    toast.success("Key copied to clipboard");
+  };
+
   if (isLoading) {
     return <div className="max-w-4xl mx-auto">Loading...</div>;
   }
@@ -172,6 +190,31 @@ export default function AccessKeys() {
                       <h3 className="font-medium text-brand-text-primary">
                         {key.name || "Default"}
                       </h3>
+                      <div className="flex items-center gap-2">
+                        {key.key && visibleKeys.has(key.id) ? (
+                          <div className="flex items-center gap-2">
+                            <code className="text-sm text-brand-text-secondary font-mono bg-brand-lavender-light/5 px-2 py-1 rounded">
+                              {key.key}
+                            </code>
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => copyKey(key.key!)}
+                              className="p-2 text-brand-accent hover:text-brand-accent/80 
+                                       transition-colors rounded-lg hover:bg-brand-lavender-light/5"
+                            >
+                              <FaCopy className="w-4 h-4" />
+                            </motion.button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => toggleKeyVisibility(key.id)}
+                            className="text-sm text-brand-accent hover:text-brand-accent/80"
+                          >
+                            Click to view key
+                          </button>
+                        )}
+                      </div>
                       <p className="text-sm text-brand-text-secondary">
                         Created on{" "}
                         {new Date(key.createdAt).toLocaleDateString()}

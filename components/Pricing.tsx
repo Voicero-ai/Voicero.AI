@@ -3,33 +3,20 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { FaCheck } from "react-icons/fa";
+import Link from "next/link";
 
 const pricingPlans = [
   {
     name: "Free",
     price: "0",
-    description: "Try out basic AI features",
-    features: [
-      "Basic AI assistant",
-      "Up to 1,000 monthly queries",
-      "Simple usage stats",
-      "1 website integration",
-      "Community support",
-    ],
-  },
-  {
-    name: "Basic",
-    price: "5",
     description: "Essential AI assistant features for your website",
-    popular: true,
+    popular: false,
     features: [
-      "Everything in Free plan",
       "Enhanced AI model",
       "Up to 10,000 monthly queries",
       "Basic analytics dashboard",
       "Usage statistics",
       "Request history",
-      "1 website integration",
       "Email support",
     ],
   },
@@ -37,15 +24,14 @@ const pricingPlans = [
     name: "Pro",
     price: "10",
     description: "Advanced features for growing websites",
-    popular: false,
+    popular: true,
     features: [
-      "Everything in Basic plan",
+      "Everything in Free plan",
       "Advanced AI model with better accuracy",
       "Up to 50,000 monthly queries",
       "Advanced analytics dashboard",
       "Real-time usage tracking",
       "User behavior insights",
-      "Up to 3 website integrations",
       "Custom AI training",
       "Priority support",
     ],
@@ -70,12 +56,11 @@ export default function Pricing() {
             Simple, Transparent Pricing
           </h2>
           <p className="text-lg text-brand-text-secondary">
-            Choose the perfect plan for your needs. All plans include a 14-day
-            free trial.
+            Choose the perfect plan for your needs.
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
           {pricingPlans.map((plan, index) => (
             <motion.div
               key={plan.name}
@@ -125,16 +110,17 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <button
-                className={`w-full py-3 px-6 rounded-xl font-medium transition-all duration-300
+              <Link
+                href="/getStarted"
+                className={`w-full block py-3 px-6 rounded-xl font-medium transition-all duration-300 text-center
                            ${
                              plan.popular
                                ? "bg-brand-accent text-white hover:bg-brand-accent/90"
                                : "bg-brand-lavender-light/10 text-brand-text-primary hover:bg-brand-lavender-light/20"
                            }`}
               >
-                Start Free Trial
-              </button>
+                Get Started
+              </Link>
             </motion.div>
           ))}
         </div>

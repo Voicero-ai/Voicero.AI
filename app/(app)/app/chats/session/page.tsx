@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   FaArrowLeft,
@@ -34,74 +34,59 @@ interface ChatSessionDetails {
   messages: ChatMessage[];
 }
 
-const mockSession: ChatSessionDetails = {
-  id: "session1",
-  type: "voice",
-  website: {
-    id: "1",
-    domain: "mystore.shopify.com",
-  },
-  startedAt: "2024-01-15T16:10:00Z",
-  messages: [
-    {
-      id: "m1",
-      type: "user",
-      content: "I need help finding the pricing for enterprise plans",
-      timestamp: "2024-01-15T16:10:00Z",
-    },
-    {
-      id: "m2",
-      type: "ai",
-      content:
-        "I'll help you find the enterprise pricing information. Let me take you to our pricing page where you can see all the details.",
-      timestamp: "2024-01-15T16:10:02Z",
-      metadata: {
-        url: "/pricing#enterprise",
-      },
-    },
-    {
-      id: "m3",
-      type: "user",
-      content: "What features are included?",
-      timestamp: "2024-01-15T16:10:15Z",
-    },
-    {
-      id: "m4",
-      type: "ai",
-      content:
-        "Let me show you the enterprise features section. Here you'll find a complete list of all included features.",
-      timestamp: "2024-01-15T16:10:17Z",
-      metadata: {
-        scrollToText: "Enterprise Features",
-      },
-    },
-    {
-      id: "m5",
-      type: "user",
-      content: "Can you give me a summary of the features?",
-      timestamp: "2024-01-15T16:10:30Z",
-    },
-    {
-      id: "m6",
-      type: "ai",
-      content: `Here's a summary of the enterprise plan features:
-
-• Unlimited users
-• 24/7 priority support
-• Custom integrations
-• Advanced analytics
-• SLA guarantees
-
-The Enterprise plan requires a minimum of 50 seats and has custom pricing based on your needs.`,
-      timestamp: "2024-01-15T16:10:32Z",
-    },
-  ],
-};
-
 export default function ChatSession() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("id");
+  const [session, setSession] = useState<ChatSessionDetails | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSession = async () => {
+      if (!sessionId) return;
+
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/chats/${sessionId}`);
+        if (!response.ok) throw new Error("Failed to fetch chat session");
+
+        const data = await response.json();
+        setSession(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Something went wrong");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSession();
+  }, [sessionId]);
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto p-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-20 bg-gray-200 rounded-xl" />
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-32 bg-gray-200 rounded-xl" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !session) {
+    return (
+      <div className="max-w-4xl mx-auto p-8">
+        <div className="bg-red-50 text-red-500 p-4 rounded-xl">
+          {error || "Session not found"}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -115,7 +100,7 @@ export default function ChatSession() {
           <span>Back to Chat History</span>
         </button>
         <a
-          href={`https://${mockSession.website.domain}`}
+          href={`https://${session.website.domain}`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-brand-text-secondary hover:text-brand-accent transition-colors"
@@ -128,7 +113,7 @@ export default function ChatSession() {
       <div className="bg-white rounded-xl shadow-sm border border-brand-lavender-light/20 p-6">
         <div className="flex items-center gap-4 mb-4">
           <div className="p-2 bg-brand-lavender-light/10 rounded-lg">
-            {mockSession.type === "voice" ? (
+            {session.type === "voice" ? (
               <FaVolumeUp className="w-5 h-5 text-brand-accent" />
             ) : (
               <FaKeyboard className="w-5 h-5 text-brand-accent" />
@@ -136,11 +121,11 @@ export default function ChatSession() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-brand-text-primary mb-1">
-              {mockSession.website.domain}
+              {session.website.domain}
             </h1>
             <p className="text-brand-text-secondary">
-              {mockSession.type === "voice" ? "Voice" : "Text"} chat started{" "}
-              {new Date(mockSession.startedAt).toLocaleString()}
+              {session.type === "voice" ? "Voice" : "Text"} chat started{" "}
+              {new Date(session.startedAt).toLocaleString()}
             </p>
           </div>
         </div>
@@ -148,7 +133,7 @@ export default function ChatSession() {
 
       {/* Chat Messages */}
       <div className="space-y-6">
-        {mockSession.messages.map((message) => (
+        {session.messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${
@@ -177,7 +162,7 @@ export default function ChatSession() {
                 <div className="mt-3 pt-3 border-t border-brand-lavender-light/20">
                   {message.metadata.url && (
                     <a
-                      href={`https://${mockSession.website.domain}${message.metadata.url}`}
+                      href={`https://${session.website.domain}${message.metadata.url}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 text-sm text-brand-accent hover:text-brand-accent/80 transition-colors"

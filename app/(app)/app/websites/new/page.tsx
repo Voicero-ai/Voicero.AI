@@ -81,7 +81,27 @@ export default function NewWebsite() {
       // If Pro plan, redirect to Stripe
       if (form.plan === "Pro") {
         if (data.checkoutUrl) {
-          window.location.href = data.checkoutUrl;
+          // Create a checkout session with the website data
+          const stripeResponse = await fetch("/api/stripe/session", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              websiteData: data.websiteData,
+              successUrl: `${window.location.origin}/app/websites/new/complete?session_id={CHECKOUT_SESSION_ID}`,
+              cancelUrl: `${window.location.origin}/app/websites/new?canceled=true`,
+            }),
+          });
+
+          const stripeData = await stripeResponse.json();
+          if (!stripeResponse.ok) {
+            throw new Error(
+              stripeData.error || "Failed to create checkout session"
+            );
+          }
+
+          window.location.href = stripeData.url;
         } else {
           throw new Error("Failed to create Stripe checkout session");
         }
@@ -258,7 +278,7 @@ export default function NewWebsite() {
                   </p>
                   <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-sm text-yellow-800 font-medium mb-2">
-                      ⚠️ Save this key now! You won't be able to see it again.
+                      ⚠️ Save this key now!
                     </p>
                     <div className="flex items-center gap-2">
                       <code className="text-xs font-mono bg-white px-2 py-1 rounded border border-yellow-200">

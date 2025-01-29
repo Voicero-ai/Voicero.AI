@@ -31,43 +31,11 @@ export async function POST(request: Request) {
     // For Pro plan, handle Stripe first
     if (validatedData.plan === "Pro") {
       try {
-        // Get or create customer
-        let customerId;
-        const user = await prisma.user.findUnique({
-          where: { id: session.user.id },
-          select: { stripeCustomerId: true },
+        // For Pro plan, just return the website data to be used in session creation
+        return NextResponse.json({
+          websiteData: validatedData,
+          checkoutUrl: true,
         });
-
-        if (user?.stripeCustomerId) {
-          customerId = user.stripeCustomerId;
-        } else {
-          const customer = await stripe.customers.create({
-            email: session.user.email!,
-            metadata: { userId: session.user.id },
-          });
-
-          await prisma.user.update({
-            where: { id: session.user.id },
-            data: { stripeCustomerId: customer.id },
-          });
-          customerId = customer.id;
-        }
-
-        // Create checkout session
-        const checkoutSession = await stripe.checkout.sessions.create({
-          customer: customerId,
-          payment_method_types: ["card"],
-          line_items: [{ price: process.env.STRIPE_PRICE_ID!, quantity: 1 }],
-          mode: "subscription",
-          success_url: `${process.env.NEXT_PUBLIC_APP_URL}/app/websites/new/complete?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/app/websites/new?canceled=true`,
-          metadata: {
-            websiteData: JSON.stringify(validatedData),
-            userId: session.user.id,
-          },
-        });
-
-        return NextResponse.json({ checkoutUrl: checkoutSession.url });
       } catch (stripeError: any) {
         console.error("Stripe error:", stripeError);
         return NextResponse.json(
