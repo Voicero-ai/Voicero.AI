@@ -30,7 +30,7 @@ const demoFeatures = [
 
 export default function Demo() {
   return (
-    <section id="demo" className="py-24 bg-white">
+    <section id="demo" className="section-container section-container-demo py-24 bg-white">
       <div className="container mx-auto px-4">
         {/* Header */}
         <motion.div

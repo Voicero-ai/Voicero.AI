@@ -45,9 +45,9 @@ const features: Feature[] = [
 
 export default function Features() {
   return (
-    <section
+    <motion.section
       id="features"
-      className="py-24 bg-gradient-to-b from-white to-brand-lavender-light/10"
+      className="section-container section-container-features py-24 bg-gradient-to-b from-white to-brand-lavender-light/10"
     >
       <div className="container mx-auto px-4">
         <motion.div
@@ -92,6 +92,6 @@ export default function Features() {
           ))}
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }

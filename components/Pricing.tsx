@@ -42,7 +42,7 @@ export default function Pricing() {
   return (
     <section
       id="pricing"
-      className="py-24 bg-gradient-to-b from-white to-brand-lavender-light/10"
+      className="section-container section-container-pricing py-24 bg-gradient-to-b from-white to-brand-lavender-light/10"
     >
       <div className="container mx-auto px-4">
         <motion.div

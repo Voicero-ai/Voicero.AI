@@ -73,9 +73,9 @@ export default function Hero() {
   };
 
   return (
-    <section
+    <motion.section
       id="hero"
-      className="relative min-h-screen pt-20 bg-gradient-to-b from-brand-lavender-light/20 to-white overflow-hidden"
+      className="section-container section-container-hero relative min-h-screen pt-8 bg-gradient-to-b from-brand-lavender-light/20 to-white overflow-hidden"
     >
       {/* Background Elements */}
       <motion.div
@@ -95,7 +95,7 @@ export default function Hero() {
       </motion.div>
 
       {/* Content */}
-      <div className="container mx-auto px-4 pt-12">
+      <div className="container mx-auto px-4 pt-24">
         {/* Text Content */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -182,6 +182,6 @@ export default function Hero() {
           </div>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }
