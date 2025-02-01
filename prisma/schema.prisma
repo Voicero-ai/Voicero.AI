@@ -23,31 +23,32 @@ model User {
 }
 
 model Website {
-  id              String             @id @default(uuid())
-  url             String // The allowed website URL
-  name            String? // Optional name for the website
-  userId          String
-  type            String // The type of website (e.g., "shopify", "wordpress", "other")
-  createdAt       DateTime           @default(now())
-  renewsOn        DateTime? // Monthly subscription renewal date
-  plan            String // Subscription plan type
-  stripeId        String?            @unique // Stripe subscription ID
-  active          Boolean            @default(true)
-  syncFrequency   String             @default("daily") // daily, weekly, monthly
-  lastSyncedAt    DateTime?
-  monthlyQueries  Int                @default(0)
-  accessKeys      AccessKey[]
-  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  queryLimit      Int                @default(10000)
-  posts           WordpressPost[]
-  pages           WordpressPage[]
-  products        WordpressProduct[]
-  shopifyStoreId  String?            @unique
-  shopifyPages    ShopifyPage[]
-  shopifyBlog     ShopifyBlog[]
-  shopifyProducts ShopifyProduct[]
-  aiAssistantId   String? // OpenAI Assistant ID
-  aiThreads       AiThread[]
+  id                String              @id @default(uuid())
+  url               String // The allowed website URL
+  name              String? // Optional name for the website
+  userId            String
+  type              String // The type of website (e.g., "shopify", "wordpress", "other")
+  createdAt         DateTime            @default(now())
+  renewsOn          DateTime? // Monthly subscription renewal date
+  plan              String // Subscription plan type
+  stripeId          String?             @unique // Stripe subscription ID
+  active            Boolean             @default(true)
+  syncFrequency     String              @default("daily") // daily, weekly, monthly
+  lastSyncedAt      DateTime?
+  monthlyQueries    Int                 @default(0)
+  accessKeys        AccessKey[]
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  queryLimit        Int                 @default(10000)
+  posts             WordpressPost[]
+  pages             WordpressPage[]
+  products          WordpressProduct[]
+  shopifyStoreId    String?             @unique
+  shopifyPages      ShopifyPage[]
+  shopifyBlog       ShopifyBlog[]
+  shopifyProducts   ShopifyProduct[]
+  aiAssistantId     String? // OpenAI Assistant ID
+  aiThreads         AiThread[]
+  WordpressCategory WordpressCategory[]
 
   @@index([userId])
 }
@@ -165,6 +166,10 @@ model WordpressCategory {
   slug        String          @unique
   description String?
   posts       WordpressPost[]
+  website     Website?        @relation(fields: [websiteId], references: [id])
+  websiteId   String?
+
+  @@index([websiteId])
 }
 
 model WordpressTag {
