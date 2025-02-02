@@ -56,21 +56,28 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create OpenAI assistant
-    const assistant = await createAssistant(website.name || website.url);
+    // Only create new assistant if one doesn't exist
+    let assistantId = website.aiAssistantId;
+    if (!assistantId) {
+      const assistant = await createAssistant(website.name || website.url);
+      assistantId = assistant.id;
 
-    // Save assistant ID to website record
-    await prisma.website.update({
-      where: { id: website.id },
-      data: {
-        aiAssistantId: assistant.id,
-      },
-    });
+      // Save assistant ID to website record
+      await prisma.website.update({
+        where: { id: website.id },
+        data: {
+          aiAssistantId: assistantId,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
-      message: "OpenAI assistant created",
-      assistantId: assistant.id,
+      message:
+        assistantId === website.aiAssistantId
+          ? "Using existing assistant"
+          : "OpenAI assistant created",
+      assistantId,
       timestamp: new Date(),
     });
   } catch (error: any) {

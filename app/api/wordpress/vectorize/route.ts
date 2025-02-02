@@ -85,7 +85,10 @@ async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
     // Get all WordPress content for this website
     const posts = await prisma.wordpressPost.findMany({
       where: { websiteId },
-      include: { author: true },
+      include: {
+        author: true,
+        comments: true, // Include comments
+      },
     });
 
     const pages = await prisma.wordpressPage.findMany({
@@ -94,7 +97,10 @@ async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
 
     const products = await prisma.wordpressProduct.findMany({
       where: { websiteId },
-      include: { reviews: true, categories: true },
+      include: {
+        reviews: true,
+        categories: true,
+      },
     });
 
     // Add posts to vector store
@@ -127,6 +133,42 @@ async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
           id: `post-${post.wpId}`,
           error: error instanceof Error ? error.message : String(error),
         });
+      }
+    }
+
+    // Add comments to vector store
+    for (const post of posts) {
+      for (const comment of post.comments) {
+        try {
+          const embedding = await createEmbedding(
+            `Comment on post "${post.title}": ${comment.content}`
+          );
+          await index.namespace(websiteId).upsert([
+            {
+              id: `comment-${comment.wpId}`,
+              values: embedding,
+              metadata: {
+                type: "comment",
+                content: comment.content,
+                authorName: comment.authorName,
+                postTitle: post.title,
+                postUrl: post.link,
+                websiteId,
+                postId: post.wpId,
+                date: comment.date.toISOString(),
+              },
+            },
+          ]);
+          stats.added++;
+          stats.details.added.push(`comment-${comment.wpId}`);
+        } catch (error) {
+          console.error(`Error vectorizing comment ${comment.wpId}:`, error);
+          stats.errors++;
+          stats.details.errors.push({
+            id: `comment-${comment.wpId}`,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       }
     }
 
@@ -204,6 +246,45 @@ async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
           id: `product-${product.wpId}`,
           error: error instanceof Error ? error.message : String(error),
         });
+      }
+    }
+
+    // Add product reviews to vector store
+    for (const product of products) {
+      // Add reviews for this product
+      for (const review of product.reviews) {
+        try {
+          const embedding = await createEmbedding(
+            `Review of product "${product.name}": ${review.review}`
+          );
+          await index.namespace(websiteId).upsert([
+            {
+              id: `review-${review.wpId}`,
+              values: embedding,
+              metadata: {
+                type: "review",
+                content: review.review,
+                rating: review.rating,
+                reviewer: review.reviewer,
+                productName: product.name,
+                productUrl: product.permalink,
+                websiteId,
+                productId: product.wpId,
+                verified: review.verified,
+                date: review.date.toISOString(),
+              },
+            },
+          ]);
+          stats.added++;
+          stats.details.added.push(`review-${review.wpId}`);
+        } catch (error) {
+          console.error(`Error vectorizing review ${review.wpId}:`, error);
+          stats.errors++;
+          stats.details.errors.push({
+            id: `review-${review.wpId}`,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       }
     }
 
