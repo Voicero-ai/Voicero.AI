@@ -23,32 +23,39 @@ model User {
 }
 
 model Website {
-  id                String              @id @default(uuid())
-  url               String // The allowed website URL
-  name              String? // Optional name for the website
-  userId            String
-  type              String // The type of website (e.g., "shopify", "wordpress", "other")
-  createdAt         DateTime            @default(now())
-  renewsOn          DateTime? // Monthly subscription renewal date
-  plan              String // Subscription plan type
-  stripeId          String?             @unique // Stripe subscription ID
-  active            Boolean             @default(true)
-  syncFrequency     String              @default("daily") // daily, weekly, monthly
-  lastSyncedAt      DateTime?
-  monthlyQueries    Int                 @default(0)
-  accessKeys        AccessKey[]
-  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  queryLimit        Int                 @default(10000)
-  posts             WordpressPost[]
-  pages             WordpressPage[]
-  products          WordpressProduct[]
-  shopifyStoreId    String?             @unique
-  shopifyPages      ShopifyPage[]
-  shopifyBlog       ShopifyBlog[]
-  shopifyProducts   ShopifyProduct[]
-  aiAssistantId     String? // OpenAI Assistant ID
-  aiThreads         AiThread[]
-  WordpressCategory WordpressCategory[]
+  id                       String                     @id @default(uuid())
+  url                      String // The allowed website URL
+  name                     String? // Optional name for the website
+  userId                   String
+  type                     String // The type of website (e.g., "shopify", "wordpress", "other")
+  createdAt                DateTime                   @default(now())
+  renewsOn                 DateTime? // Monthly subscription renewal date
+  plan                     String // Subscription plan type
+  stripeId                 String?                    @unique // Stripe subscription ID
+  active                   Boolean                    @default(true)
+  syncFrequency            String                     @default("daily") // daily, weekly, monthly
+  lastSyncedAt             DateTime?
+  monthlyQueries           Int                        @default(0)
+  accessKeys               AccessKey[]
+  user                     User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  queryLimit               Int                        @default(10000)
+  posts                    WordpressPost[]
+  pages                    WordpressPage[]
+  products                 WordpressProduct[]
+  shopifyStoreId           String?                    @unique
+  shopifyPages             ShopifyPage[]
+  shopifyBlog              ShopifyBlog[]
+  shopifyProducts          ShopifyProduct[]
+  aiAssistantId            String? // OpenAI Assistant ID
+  aiThreads                AiThread[]
+  WordpressCategory        WordpressCategory[]
+  WordpressMedia           WordpressMedia[]
+  WordpressAuthor          WordpressAuthor[]
+  WordpressProductCategory WordpressProductCategory[]
+  WordpressProductTag      WordpressProductTag[]
+  WordpressCustomField     WordpressCustomField[]
+  WordpressTag             WordpressTag[]
+  VectorDbConfig           VectorDbConfig?
 
   @@index([userId])
 }
@@ -75,138 +82,183 @@ model VerifiedDevice {
 }
 
 model WordpressPost {
-  id               Int                    @id @default(autoincrement())
-  wpId             Int                    @unique // WordPress Post ID
-  title            String
-  slug             String                 @unique
-  content          String                 @db.Text
-  excerpt          String?                @db.Text
-  link             String
-  featuredMediaId  Int?
-  featuredMedia    WordpressMedia?        @relation("PostFeaturedMedia", fields: [featuredMediaId], references: [wpId])
-  authorId         Int?
-  author           WordpressAuthor?       @relation(fields: [authorId], references: [wpId])
-  categories       WordpressCategory[]
-  tags             WordpressTag[]
-  comments         WordpressComment[]
-  createdAt        DateTime
-  updatedAt        DateTime
-  customFields     WordpressCustomField[]
-  WordpressMedia   WordpressMedia?        @relation("PostAttachedMedia", fields: [wordpressMediaId], references: [id])
-  wordpressMediaId Int?
-  website          Website?               @relation(fields: [websiteId], references: [id])
-  websiteId        String?
+  id           Int                    @id @default(autoincrement())
+  wpId         Int                    @unique // WordPress Post ID
+  title        String
+  content      String                 @db.Text
+  excerpt      String?                @db.Text
+  slug         String
+  link         String
+  authorId     Int?
+  author       WordpressAuthor?       @relation(fields: [authorId], references: [wpId])
+  categories   WordpressCategory[]
+  tags         WordpressTag[]
+  comments     WordpressComment[]
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  customFields WordpressCustomField[]
+  website      Website                @relation(fields: [websiteId], references: [id])
+  websiteId    String
+
+  @@unique([slug, websiteId])
+  @@index([websiteId])
 }
 
 model WordpressPage {
-  id              Int             @id @default(autoincrement())
-  wpId            Int             @unique // WordPress Page ID
-  title           String
-  slug            String          @unique
-  content         String          @db.Text
-  link            String
-  featuredMediaId Int?
-  featuredMedia   WordpressMedia? @relation("PageFeaturedMedia", fields: [featuredMediaId], references: [wpId])
-  createdAt       DateTime
-  updatedAt       DateTime
-  website         Website?        @relation(fields: [websiteId], references: [id])
-  websiteId       String?
+  id        Int      @id @default(autoincrement())
+  wpId      Int      @unique // WordPress Page ID
+  title     String
+  content   String   @db.Text
+  slug      String
+  link      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  website   Website  @relation(fields: [websiteId], references: [id])
+  websiteId String
+
+  @@unique([slug, websiteId])
+  @@index([websiteId])
 }
 
 model WordpressProduct {
   id               Int                        @id @default(autoincrement())
   wpId             Int                        @unique // WooCommerce Product ID
   name             String
-  slug             String                     @unique
+  slug             String
   permalink        String
+  description      String                     @db.Text
+  shortDescription String?                    @db.Text
   price            Float
   regularPrice     Float?
   salePrice        Float?
   stockQuantity    Int?
-  description      String                     @db.Text
-  shortDescription String?                    @db.Text
-  images           WordpressMedia[]
   categories       WordpressProductCategory[]
   tags             WordpressProductTag[]
   reviews          WordpressReview[]
-  createdAt        DateTime
-  updatedAt        DateTime
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
   customFields     WordpressCustomField[]
-  website          Website?                   @relation(fields: [websiteId], references: [id])
-  websiteId        String?
+  website          Website                    @relation(fields: [websiteId], references: [id])
+  websiteId        String
+
+  @@unique([slug, websiteId])
+  @@index([websiteId])
 }
 
 model WordpressMedia {
-  id            Int                @id @default(autoincrement())
-  wpId          Int                @unique // WordPress Media ID
-  title         String?
-  sourceUrl     String
-  altText       String?
-  caption       String?
-  posts         WordpressPost[]    @relation("PostFeaturedMedia")
-  attachedPosts WordpressPost[]    @relation("PostAttachedMedia")
-  pages         WordpressPage[]    @relation("PageFeaturedMedia")
-  products      WordpressProduct[]
+  id          Int      @id @default(autoincrement())
+  wpId        Int      @unique // WordPress Media ID
+  title       String?
+  url         String
+  alt         String?
+  description String?  @db.Text
+  caption     String?
+  mimeType    String?
+  metadata    Json?
+  createdAt   DateTime
+  updatedAt   DateTime
+  website     Website  @relation(fields: [websiteId], references: [id])
+  websiteId   String
+
+  @@index([websiteId])
 }
 
 model WordpressAuthor {
-  id          Int             @id @default(autoincrement())
-  wpId        Int             @unique // WordPress Author ID
-  name        String
-  slug        String          @unique
-  link        String
-  description String?         @db.Text
-  posts       WordpressPost[]
+  id        Int             @id @default(autoincrement())
+  wpId      Int             @unique // WordPress Author ID
+  name      String
+  email     String?
+  url       String?
+  bio       String?         @db.Text
+  avatarUrl String?
+  posts     WordpressPost[]
+  createdAt DateTime
+  updatedAt DateTime
+  website   Website         @relation(fields: [websiteId], references: [id])
+  websiteId String
+
+  @@index([websiteId])
 }
 
 model WordpressCategory {
   id          Int             @id @default(autoincrement())
   wpId        Int             @unique // WordPress Category ID
   name        String
-  slug        String          @unique
-  description String?
+  slug        String
+  description String?         @db.Text
   posts       WordpressPost[]
-  website     Website?        @relation(fields: [websiteId], references: [id])
-  websiteId   String?
+  website     Website         @relation(fields: [websiteId], references: [id])
+  websiteId   String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @default(now()) @updatedAt
 
+  @@unique([slug, websiteId])
   @@index([websiteId])
 }
 
 model WordpressTag {
-  id    Int             @id @default(autoincrement())
-  wpId  Int             @unique // WordPress Tag ID
-  name  String
-  slug  String          @unique
-  posts WordpressPost[]
+  id        Int             @id @default(autoincrement())
+  wpId      Int             @unique // WordPress Tag ID
+  name      String
+  slug      String
+  posts     WordpressPost[]
+  website   Website         @relation(fields: [websiteId], references: [id])
+  websiteId String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([slug, websiteId])
+  @@index([websiteId])
 }
 
 model WordpressProductCategory {
-  id       Int                @id @default(autoincrement())
-  wpId     Int                @unique // WooCommerce Category ID
-  name     String
-  slug     String             @unique
-  products WordpressProduct[]
+  id          Int                @id @default(autoincrement())
+  wpId        Int                @unique // WooCommerce Category ID
+  name        String
+  slug        String
+  description String?            @db.Text
+  parent      Int?
+  count       Int?
+  imageUrl    String?
+  products    WordpressProduct[]
+  website     Website            @relation(fields: [websiteId], references: [id])
+  websiteId   String
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([slug, websiteId])
+  @@index([websiteId])
 }
 
 model WordpressProductTag {
-  id       Int                @id @default(autoincrement())
-  wpId     Int                @unique // WooCommerce Tag ID
-  name     String
-  slug     String             @unique
-  products WordpressProduct[]
+  id          Int                @id @default(autoincrement())
+  wpId        Int                @unique // WooCommerce Tag ID
+  name        String
+  slug        String
+  description String?            @db.Text
+  count       Int                @default(0)
+  products    WordpressProduct[]
+  website     Website            @relation(fields: [websiteId], references: [id])
+  websiteId   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([slug, websiteId])
+  @@index([websiteId])
 }
 
 model WordpressComment {
   id          Int                @id @default(autoincrement())
   wpId        Int                @unique // WordPress Comment ID
-  postId      Int
-  post        WordpressPost      @relation(fields: [postId], references: [wpId])
   authorName  String
   authorEmail String
   content     String             @db.Text
   date        DateTime
-  status      String // approved, pending, spam
+  status      String             @default("approved") // approved, pending, spam
   parentId    Int? // Parent comment for threading
+  postId      Int
+  post        WordpressPost      @relation(fields: [postId], references: [wpId])
   parent      WordpressComment?  @relation("CommentToComment", fields: [parentId], references: [wpId])
   children    WordpressComment[] @relation("CommentToComment")
 }
@@ -214,25 +266,32 @@ model WordpressComment {
 model WordpressReview {
   id            Int              @id @default(autoincrement())
   wpId          Int              @unique // WooCommerce Review ID
-  productId     Int
-  product       WordpressProduct @relation(fields: [productId], references: [wpId])
   reviewer      String
   reviewerEmail String
   review        String           @db.Text
   rating        Int
   date          DateTime
   verified      Boolean
+  productId     Int
+  product       WordpressProduct @relation(fields: [productId], references: [wpId])
 }
 
 model WordpressCustomField {
-  id        Int               @id @default(autoincrement())
-  wpId      Int               @unique
-  postId    Int?
-  productId Int?
-  key       String
-  value     String            @db.Text
-  post      WordpressPost?    @relation(fields: [postId], references: [wpId])
-  product   WordpressProduct? @relation(fields: [productId], references: [wpId])
+  id                 Int               @id @default(autoincrement())
+  postId             Int?
+  metaKey            String
+  metaValue          String            @db.Text
+  postType           String
+  post               WordpressPost?    @relation(fields: [postId], references: [wpId])
+  website            Website           @relation(fields: [websiteId], references: [id])
+  websiteId          String
+  WordpressProduct   WordpressProduct? @relation(fields: [wordpressProductId], references: [id])
+  wordpressProductId Int?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@unique([postId, metaKey])
+  @@index([websiteId])
 }
 
 model ShopifyStore {
@@ -397,4 +456,11 @@ model AiMessage {
   createdAt    DateTime @default(now())
 
   @@index([threadId])
+}
+
+model VectorDbConfig {
+  id        String  @id @default(uuid())
+  namespace String // The namespace used to partition data (same as websiteId)
+  website   Website @relation(fields: [websiteId], references: [id])
+  websiteId String  @unique
 }
