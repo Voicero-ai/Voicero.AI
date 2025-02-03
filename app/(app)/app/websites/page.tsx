@@ -47,6 +47,7 @@ export default function Websites() {
           throw new Error("Failed to fetch websites");
         }
         const data = await response.json();
+        console.log(data);
         setWebsites(data);
       } catch (error) {
         console.error("Error fetching websites:", error);

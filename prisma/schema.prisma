@@ -32,7 +32,7 @@ model Website {
   renewsOn                 DateTime? // Monthly subscription renewal date
   plan                     String // Subscription plan type
   stripeId                 String?                    @unique // Stripe subscription ID
-  active                   Boolean                    @default(true)
+  active                   Boolean                    @default(false)
   syncFrequency            String                     @default("daily") // daily, weekly, monthly
   lastSyncedAt             DateTime?
   monthlyQueries           Int                        @default(0)

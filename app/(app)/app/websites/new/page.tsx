@@ -33,7 +33,7 @@ export default function NewWebsite() {
   const [generatedKey] = useState<string>(() => {
     const chars =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    const length = 32;
+    const length = 64;
     return Array.from(crypto.getRandomValues(new Uint8Array(length)))
       .map((x) => chars[x % chars.length])
       .join("");

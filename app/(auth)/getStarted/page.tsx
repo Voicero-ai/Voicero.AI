@@ -7,6 +7,7 @@ import Link from "next/link";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
 interface FormData {
   companyName: string;
@@ -102,8 +103,26 @@ export default function GetStarted() {
         throw new Error(data.error || "Failed to register");
       }
 
-      setStep(2);
-      // Optional: Store user data or token in context/localStorage
+      // Get callback URL if it exists
+      const searchParams = new URLSearchParams(window.location.search);
+      const callbackUrl = searchParams.get("callbackUrl");
+
+      if (callbackUrl) {
+        // If there's a callback URL, sign in automatically and redirect
+        const result = await signIn("credentials", {
+          login: formData.email,
+          password: formData.password,
+          redirect: false,
+        });
+
+        if (result?.error) {
+          throw new Error(result.error);
+        }
+
+        router.push(callbackUrl);
+      } else {
+        setStep(2); // Show success message if no callback
+      }
     } catch (error) {
       console.error("Registration error:", error);
       setErrors((prev) => ({
@@ -385,7 +404,7 @@ export default function GetStarted() {
               <p className="mt-8 text-center text-sm text-brand-text-secondary">
                 Already have an account?{" "}
                 <Link
-                  href="/login"
+                  href={`/login${window.location.search}`}
                   className="font-medium text-brand-accent hover:text-brand-accent/80 transition-colors"
                 >
                   Sign in

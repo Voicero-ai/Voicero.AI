@@ -30,16 +30,20 @@ export default function Login() {
     setIsLoading(true);
 
     try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const callbackUrl = searchParams.get("callbackUrl");
+
       const result = await signIn("credentials", {
         login: formData.login,
         password: formData.password,
+        callbackUrl: callbackUrl || "/app",
         redirect: false,
       });
 
       if (result?.error) {
         setError(result.error);
       } else {
-        router.push("/app"); // Redirect to dashboard on success
+        router.push(callbackUrl || "/app");
       }
     } catch (error) {
       setError("An error occurred during sign in");
@@ -173,7 +177,7 @@ export default function Login() {
             <p className="mt-8 text-center text-sm text-brand-text-secondary">
               Don't have an account?{" "}
               <Link
-                href="/getStarted"
+                href={`/getStarted${window.location.search}`}
                 className="font-medium text-brand-accent hover:text-brand-accent/80 transition-colors"
               >
                 Create one
