@@ -12,6 +12,8 @@ interface SyncStats {
     posts?: Array<{ id: number; error: string }>;
     pages?: Array<{ id: number; error: string }>;
     products?: Array<{ id: number; error: string }>;
+    comments?: Array<{ id: number; error: string }>;
+    reviews?: Array<{ id: number; error: string }>;
   };
 }
 
@@ -194,6 +196,141 @@ async function syncToDatabase(
           stats.created++;
         } catch (error) {
           console.error("Error syncing product:", error);
+          stats.errors++;
+        }
+      }
+    }
+
+    // Sync Comments
+    if (data.comments) {
+      // First pass: Create all comments without parent relationships
+      for (const comment of data.comments) {
+        try {
+          // Validate required fields
+          if (
+            !comment.id ||
+            !comment.post_id ||
+            !comment.author ||
+            !comment.content
+          ) {
+            console.warn("Skipping invalid comment:", comment);
+            continue;
+          }
+
+          await prisma.wordpressComment.upsert({
+            where: {
+              wpId: parseInt(String(comment.id), 10),
+            },
+            update: {
+              postId: parseInt(String(comment.post_id), 10),
+              authorName: comment.author,
+              authorEmail: comment.author_email || "",
+              content: comment.content,
+              status: comment.status || "approved",
+              // Don't update parentId in first pass
+              date: new Date(comment.date || Date.now()),
+            },
+            create: {
+              wpId: parseInt(String(comment.id), 10),
+              postId: parseInt(String(comment.post_id), 10),
+              authorName: comment.author,
+              authorEmail: comment.author_email || "",
+              content: comment.content,
+              status: comment.status || "approved",
+              // Don't set parentId in first pass
+              date: new Date(comment.date || Date.now()),
+            },
+          });
+          stats.created++;
+        } catch (error) {
+          console.error("Error syncing comment:", {
+            commentId: comment?.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          if (!stats.details.comments) stats.details.comments = [];
+          stats.details.comments.push({
+            id: parseInt(String(comment?.id), 10) || 0,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          stats.errors++;
+        }
+      }
+
+      // Second pass: Update parent relationships
+      for (const comment of data.comments) {
+        // Skip if parent_id is '0' or falsy (indicates top-level comment)
+        if (comment.parent_id && comment.parent_id !== "0") {
+          try {
+            await prisma.wordpressComment.update({
+              where: {
+                wpId: parseInt(String(comment.id), 10),
+              },
+              data: {
+                parentId: parseInt(String(comment.parent_id), 10),
+              },
+            });
+          } catch (error) {
+            console.error("Error updating comment parent relationship:", {
+              commentId: comment?.id,
+              parentId: comment?.parent_id,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            stats.errors++;
+          }
+        }
+      }
+    }
+
+    // Sync Product Reviews
+    if (data.reviews) {
+      for (const review of data.reviews) {
+        try {
+          // Validate required fields
+          if (
+            !review.id ||
+            !review.product_id ||
+            !review.reviewer ||
+            !review.review
+          ) {
+            console.warn("Skipping invalid review:", review);
+            continue;
+          }
+
+          await prisma.wordpressReview.upsert({
+            where: {
+              wpId: parseInt(String(review.id), 10),
+            },
+            update: {
+              productId: parseInt(String(review.product_id), 10),
+              reviewer: review.reviewer,
+              reviewerEmail: review.reviewer_email || "",
+              review: review.review,
+              rating: parseInt(String(review.rating), 10) || 0,
+              verified: review.verified || false,
+              date: new Date(review.date || Date.now()),
+            },
+            create: {
+              wpId: parseInt(String(review.id), 10),
+              productId: parseInt(String(review.product_id), 10),
+              reviewer: review.reviewer,
+              reviewerEmail: review.reviewer_email || "",
+              review: review.review,
+              rating: parseInt(String(review.rating), 10) || 0,
+              verified: review.verified || false,
+              date: new Date(review.date || Date.now()),
+            },
+          });
+          stats.created++;
+        } catch (error) {
+          console.error("Error syncing review:", {
+            reviewId: review?.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          if (!stats.details.reviews) stats.details.reviews = [];
+          stats.details.reviews.push({
+            id: parseInt(String(review?.id), 10) || 0,
+            error: error instanceof Error ? error.message : String(error),
+          });
           stats.errors++;
         }
       }
