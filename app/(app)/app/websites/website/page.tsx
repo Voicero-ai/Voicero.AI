@@ -119,8 +119,8 @@ export default function WebsiteSettings() {
       steps: [
         "Download and install our WordPress plugin",
         "Go to plugin settings",
-        "Enter your access key",
-        "Click 'Connect and Sync'",
+        "Enter your access key if it is not already set",
+        "Click 'Sync Content Now'",
       ],
       pluginUrl: "https://wordpress.org/plugins/your-plugin", // Replace with actual URL
     },
@@ -128,8 +128,8 @@ export default function WebsiteSettings() {
       steps: [
         "Install our Shopify app from the Shopify App Store",
         "Go to app settings",
-        "Enter your access key",
-        "Click 'Connect and Sync'",
+        "Enter your access key if it is not already set",
+        "Click 'Sync Content Now'",
       ],
       appUrl: "https://apps.shopify.com/your-app", // Replace with actual URL
     },
@@ -181,13 +181,16 @@ export default function WebsiteSettings() {
 
     setIsSyncing(true);
     try {
-      // Redirect to appropriate setup page based on website type
-      const type = websiteData.type;
-      if (type === "WordPress") {
+      // Fix the type check here as well
+      const type = websiteData.type?.toLowerCase() || "";
+      const isWordPress =
+        type === "wordpress" || type === "wp" || type.includes("wordpress");
+
+      if (isWordPress) {
         // Construct WordPress admin URL
         const adminUrl = `${websiteData.domain}/wp-admin/admin.php?page=ai-website-admin`;
         window.open(adminUrl, "_blank");
-      } else if (type === "Shopify") {
+      } else if (type === "shopify") {
         window.open(setupInstructions.shopify.appUrl, "_blank");
       }
     } catch (error) {
@@ -233,12 +236,18 @@ export default function WebsiteSettings() {
 
   // Add this function inside WebsiteSettings component
   const handleToggleStatus = async () => {
-    if (!websiteData || isToggling) return; // Prevent multiple clicks
+    if (!websiteData || isToggling) return;
+
+    // Prevent activation if never synced
+    if (!websiteData.lastSync) {
+      setShowSetupModal(true);
+      return;
+    }
 
     const currentActive = websiteData.active;
     const newStatus = !currentActive;
 
-    setIsToggling(true); // Start toggle operation
+    setIsToggling(true);
 
     try {
       // Optimistically update the UI
@@ -278,7 +287,7 @@ export default function WebsiteSettings() {
     } catch (error) {
       console.error("Error toggling status:", error);
     } finally {
-      setIsToggling(false); // End toggle operation
+      setIsToggling(false);
     }
   };
 
@@ -538,8 +547,10 @@ export default function WebsiteSettings() {
 
   // Setup Modal Component
   const SetupModal = () => {
-    const type = websiteData?.type.toLowerCase() || "";
-    const isWordPress = type === "WordPress";
+    // Fix the type check to be case-insensitive and more robust
+    const type = websiteData?.type?.toLowerCase() || "";
+    const isWordPress =
+      type === "wordpress" || type === "wp" || type.includes("wordpress");
     const instructions = isWordPress
       ? setupInstructions.wordpress
       : setupInstructions.shopify;
@@ -773,15 +784,24 @@ export default function WebsiteSettings() {
         </div>
         <div className="flex gap-4">
           <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: !websiteData.lastSync ? 1 : 1.02 }}
+            whileTap={{ scale: !websiteData.lastSync ? 1 : 0.98 }}
             onClick={handleToggleStatus}
-            disabled={isToggling}
+            disabled={isToggling || !websiteData.lastSync}
+            title={
+              !websiteData.lastSync
+                ? "Please sync your content before activating"
+                : ""
+            }
             className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-colors ${
               status === "active"
                 ? "bg-brand-accent/10 text-brand-accent hover:bg-brand-accent/20"
                 : "bg-brand-lavender-dark text-white hover:bg-brand-lavender-dark/90"
-            } ${isToggling ? "opacity-50 cursor-not-allowed" : ""}`}
+            } ${
+              isToggling || !websiteData.lastSync
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+            }`}
           >
             <FaPowerOff
               className={`w-4 h-4 ${isToggling ? "animate-spin" : ""}`}
