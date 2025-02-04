@@ -51,30 +51,61 @@ export async function GET(request: NextRequest) {
     let pages = [];
 
     // 5) Check website.type => If "wordpress", fetch from WordPress tables
-    if (website.type.toLowerCase() === "wordpress") {
-      // Fetching WordPress Products
+    if (website.type === "WordPress") {
+      // Fetch WordPress Products with reviews
       const wpProducts = await prisma.wordpressProduct.findMany({
         where: { websiteId },
         orderBy: { updatedAt: "desc" },
+        include: {
+          reviews: true,
+          categories: true,
+          tags: true,
+          customFields: true,
+        },
       });
 
-      // Map them to your front-end shape
       products = wpProducts.map((prod) => ({
         id: String(prod.id),
         title: prod.name,
-        url: `/products/${prod.slug}`, // or just prod.slug
+        url: `/products/${prod.slug}`,
         type: "product" as const,
         lastUpdated: prod.updatedAt.toISOString(),
-        aiRedirects: 0, // if you have a separate tracking table, sum it here
+        aiRedirects: 0,
         description: prod.description,
         price: prod.price,
+        regularPrice: prod.regularPrice,
+        salePrice: prod.salePrice,
+        stockQuantity: prod.stockQuantity,
+        categories: prod.categories.map((c) => ({ id: c.id, name: c.name })),
+        tags: prod.tags.map((t) => ({ id: t.id, name: t.name })),
+        reviews: prod.reviews.map((r) => ({
+          id: r.id,
+          reviewer: r.reviewer,
+          rating: r.rating,
+          review: r.review,
+          verified: r.verified,
+          date: r.date.toISOString(),
+        })),
+        customFields: prod.customFields.reduce(
+          (acc, field) => ({
+            ...acc,
+            [field.metaKey]: field.metaValue,
+          }),
+          {}
+        ),
       }));
 
-      // Fetching WordPress Posts
+      // Fetch WordPress Posts with more relations
       const wpPosts = await prisma.wordpressPost.findMany({
         where: { websiteId },
         orderBy: { updatedAt: "desc" },
-        include: { author: true },
+        include: {
+          author: true,
+          categories: true,
+          tags: true,
+          comments: true,
+          customFields: true,
+        },
       });
 
       blogPosts = wpPosts.map((post) => ({
@@ -86,6 +117,23 @@ export async function GET(request: NextRequest) {
         aiRedirects: 0,
         content: post.excerpt ?? post.content,
         author: post.author?.name ?? "Unknown",
+        categories: post.categories.map((c) => ({ id: c.id, name: c.name })),
+        tags: post.tags.map((t) => ({ id: t.id, name: t.name })),
+        comments: post.comments.map((c) => ({
+          id: c.id,
+          author: c.authorName,
+          content: c.content,
+          date: c.date.toISOString(),
+          status: c.status,
+          parentId: c.parentId,
+        })),
+        customFields: post.customFields.reduce(
+          (acc, field) => ({
+            ...acc,
+            [field.metaKey]: field.metaValue,
+          }),
+          {}
+        ),
       }));
 
       // Fetching WordPress Pages
@@ -105,7 +153,7 @@ export async function GET(request: NextRequest) {
       }));
 
       // 6) If Shopify => fetch from Shopify tables
-    } else if (website.type.toLowerCase() === "shopify") {
+    } else if (website.type === "Shopify") {
       // Shopify Products
       const shopifyProducts = await prisma.shopifyProduct.findMany({
         where: { websiteId },

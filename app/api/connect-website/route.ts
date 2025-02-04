@@ -31,7 +31,7 @@ export async function POST(request: Request) {
         where: {
           id: websiteId,
           userId: session.user.id,
-          type: "wordpress",
+          type: "WordPress",
         },
         include: {
           accessKeys: true,
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
           url: siteUrl,
           name: websiteName,
           userId: session.user.id,
-          type: "wordpress",
+          type: "WordPress",
           plan: "free",
           accessKeys: {
             create: {

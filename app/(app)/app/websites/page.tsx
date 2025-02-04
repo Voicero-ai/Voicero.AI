@@ -92,7 +92,9 @@ export default function Websites() {
           {websites.map((website) => (
             <motion.div
               key={website.id}
-              onClick={() => setSelectedWebsite(website)}
+              onClick={() =>
+                router.push(`/app/websites/website?id=${website.id}`)
+              }
               className="bg-white rounded-xl shadow-sm border border-brand-lavender-light/20 
                        overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
             >
@@ -146,16 +148,6 @@ export default function Websites() {
                     >
                       <FaExternalLinkAlt className="w-4 h-4" />
                     </a>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/app/websites/website?id=${website.id}`);
-                      }}
-                      className="p-2 text-brand-text-secondary hover:text-brand-accent 
-                               transition-colors rounded-lg hover:bg-brand-lavender-light/5"
-                    >
-                      <FaCog className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
 

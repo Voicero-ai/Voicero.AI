@@ -40,11 +40,13 @@ const DeleteWebsiteModal = ({
   onClose,
   onConfirm,
   websiteName,
+  isDeleting,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
   websiteName: string;
+  isDeleting: boolean;
 }) => (
   <AnimatePresence>
     {isOpen && (
@@ -71,17 +73,87 @@ const DeleteWebsiteModal = ({
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
+            disabled={isDeleting}
             className="px-4 py-2 text-brand-text-secondary hover:text-brand-text-primary 
-                     transition-colors rounded-lg"
+                     transition-colors rounded-lg disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
+            disabled={isDeleting}
             className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white 
+                     rounded-lg transition-colors disabled:opacity-50 
+                     flex items-center gap-2"
+          >
+            {isDeleting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              "Delete Website"
+            )}
+          </button>
+        </div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
+// Add a new modal for subscription warning
+const SubscriptionWarningModal = ({
+  isOpen,
+  onClose,
+  websiteName,
+  router,
+  websiteId,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  websiteName: string;
+  router: any; // Or use proper Next.js router type
+  websiteId?: string;
+}) => (
+  <AnimatePresence>
+    {isOpen && (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 
+                   w-full max-w-md bg-white rounded-xl shadow-xl z-50 p-6"
+      >
+        <div className="flex items-center gap-4 text-brand-accent mb-4">
+          <FaExclamationTriangle className="w-6 h-6" />
+          <h3 className="text-xl font-bold">Active Subscription</h3>
+        </div>
+
+        <p className="text-brand-text-secondary mb-2">
+          <span className="font-semibold">{websiteName}</span> has an active
+          subscription.
+        </p>
+        <p className="text-sm text-brand-text-secondary mb-6">
+          Please cancel your subscription before deleting this website.
+        </p>
+
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-brand-text-secondary hover:text-brand-text-primary 
+                     transition-colors rounded-lg"
+          >
+            Close
+          </button>
+          <button
+            onClick={() => {
+              onClose();
+              router.push(`/app/websites/website?websiteId=${websiteId}`);
+            }}
+            className="px-4 py-2 bg-brand-accent hover:bg-brand-accent/90 text-white 
                      rounded-lg transition-colors"
           >
-            Delete Website
+            Manage Subscription
           </button>
         </div>
       </motion.div>
@@ -102,6 +174,8 @@ export default function Settings() {
   const { user, updateUser } = useUser();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [websiteToDelete, setWebsiteToDelete] = useState<Website | null>(null);
+  const [showSubscriptionWarning, setShowSubscriptionWarning] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -231,8 +305,10 @@ export default function Settings() {
 
   const handleDelete = async () => {
     if (!websiteToDelete) return;
+    setIsDeleting(true);
+
     try {
-      const response = await fetch(`/api/websites/delete`, {
+      const response = await fetch(`/api/websites/delete-website`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -240,7 +316,17 @@ export default function Settings() {
         body: JSON.stringify({ id: websiteToDelete.id }),
       });
 
-      if (!response.ok) throw new Error("Failed to delete website");
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (
+          errorData?.error === "Cannot delete website with active subscription"
+        ) {
+          setShowDeleteModal(false);
+          setShowSubscriptionWarning(true);
+          return;
+        }
+        throw new Error(errorData?.error || "Failed to delete website");
+      }
 
       // Update local state to remove the deleted website
       setWebsites(websites.filter((w) => w.id !== websiteToDelete.id));
@@ -248,6 +334,9 @@ export default function Settings() {
       setWebsiteToDelete(null);
     } catch (error) {
       console.error("Error deleting website:", error);
+      // You might want to show an error message to the user here
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -545,7 +634,8 @@ export default function Settings() {
                       </p>
                       {site.plan === "Free" ? null : (
                         <p className="text-sm text-brand-text-secondary">
-                          Renews on {new Date(site.renewsOn).toLocaleDateString()}
+                          Renews on{" "}
+                          {new Date(site.renewsOn).toLocaleDateString()}
                         </p>
                       )}
                     </div>
@@ -569,9 +659,7 @@ export default function Settings() {
                       whileTap={{ scale: 0.95 }}
                       className="p-2 text-brand-text-secondary hover:text-brand-accent 
                                transition-colors rounded-lg hover:bg-brand-lavender-light/5"
-                      onClick={() =>
-                        window.open(`${site.url}`, "_blank")
-                      }
+                      onClick={() => window.open(`${site.url}`, "_blank")}
                     >
                       <FaExternalLinkAlt className="w-4 h-4" />
                     </motion.button>
@@ -618,11 +706,25 @@ export default function Settings() {
       <DeleteWebsiteModal
         isOpen={showDeleteModal}
         onClose={() => {
-          setShowDeleteModal(false);
-          setWebsiteToDelete(null);
+          if (!isDeleting) {
+            setShowDeleteModal(false);
+            setWebsiteToDelete(null);
+          }
         }}
         onConfirm={handleDelete}
         websiteName={websiteToDelete?.url || ""}
+        isDeleting={isDeleting}
+      />
+
+      <SubscriptionWarningModal
+        isOpen={showSubscriptionWarning}
+        onClose={() => {
+          setShowSubscriptionWarning(false);
+          setWebsiteToDelete(null);
+        }}
+        websiteName={websiteToDelete?.url || ""}
+        router={router}
+        websiteId={websiteToDelete?.id}
       />
     </div>
   );

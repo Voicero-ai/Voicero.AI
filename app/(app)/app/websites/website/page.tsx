@@ -10,6 +10,7 @@ import {
   FaFile,
   FaExternalLinkAlt,
   FaCheck,
+  FaPowerOff,
 } from "react-icons/fa";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -22,8 +23,30 @@ interface ContentItem {
   type: "product" | "post" | "page";
   lastUpdated: string;
   aiRedirects: number;
-  // You can add "description?" or "content?" if you wish
-  [key: string]: any; // fallback for extra fields
+  categories?: Array<{ id: number; name: string }>;
+  tags?: Array<{ id: number; name: string }>;
+  comments?: Array<{
+    id: number;
+    author: string;
+    content: string;
+    date: string;
+    status: string;
+    parentId?: number;
+  }>;
+  reviews?: Array<{
+    id: number;
+    reviewer: string;
+    rating: number;
+    review: string;
+    verified: boolean;
+    date: string;
+  }>;
+  customFields?: Record<string, string>;
+  price?: number;
+  regularPrice?: number;
+  salePrice?: number;
+  stockQuantity?: number;
+  [key: string]: any;
 }
 
 // Data shape from the new API route
@@ -33,6 +56,7 @@ interface WebsiteData {
   type: string;
   plan: string;
   name: string;
+  active: boolean;
   status: "active" | "inactive";
   monthlyQueries: number;
   queryLimit: number;
@@ -87,6 +111,9 @@ export default function WebsiteSettings() {
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
 
+  // Add this state to track the toggle operation
+  const [isToggling, setIsToggling] = useState(false);
+
   const setupInstructions: SetupInstructions = {
     wordpress: {
       steps: [
@@ -123,6 +150,7 @@ export default function WebsiteSettings() {
           return;
         }
         const data = await res.json();
+        console.log("Website data:", data);
         setWebsiteData(data);
       } catch (error) {
         console.error("Error fetching website data:", error);
@@ -154,10 +182,12 @@ export default function WebsiteSettings() {
     setIsSyncing(true);
     try {
       // Redirect to appropriate setup page based on website type
-      const type = websiteData.type.toLowerCase();
-      if (type === "wordpress") {
-        window.open(setupInstructions.wordpress.pluginUrl, "_blank");
-      } else if (type === "shopify") {
+      const type = websiteData.type;
+      if (type === "WordPress") {
+        // Construct WordPress admin URL
+        const adminUrl = `${websiteData.domain}/wp-admin/admin.php?page=ai-website-admin`;
+        window.open(adminUrl, "_blank");
+      } else if (type === "Shopify") {
         window.open(setupInstructions.shopify.appUrl, "_blank");
       }
     } catch (error) {
@@ -201,6 +231,57 @@ export default function WebsiteSettings() {
     }
   };
 
+  // Add this function inside WebsiteSettings component
+  const handleToggleStatus = async () => {
+    if (!websiteData || isToggling) return; // Prevent multiple clicks
+
+    const currentActive = websiteData.active;
+    const newStatus = !currentActive;
+
+    setIsToggling(true); // Start toggle operation
+
+    try {
+      // Optimistically update the UI
+      setWebsiteData({
+        ...websiteData,
+        active: newStatus,
+        status: newStatus ? "active" : "inactive",
+      } as WebsiteData);
+
+      const response = await fetch("/api/websites/toggle-status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          websiteId: websiteData.id,
+        }),
+      });
+
+      if (!response.ok) {
+        // Revert using the stored original state
+        setWebsiteData({
+          ...websiteData,
+          active: currentActive,
+          status: currentActive ? "active" : "inactive",
+        } as WebsiteData);
+        throw new Error("Failed to toggle status");
+      }
+
+      const data = await response.json();
+      // Update with server response to ensure sync
+      setWebsiteData({
+        ...websiteData,
+        active: data.status === "active",
+        status: data.status,
+      } as WebsiteData);
+    } catch (error) {
+      console.error("Error toggling status:", error);
+    } finally {
+      setIsToggling(false); // End toggle operation
+    }
+  };
+
   // 3) If loading or no data yet, show a loading state
   if (isLoading || !websiteData) {
     return (
@@ -233,6 +314,10 @@ export default function WebsiteSettings() {
   // 5) We reuse your ContentList component for each tab
   const ContentList = ({ items }: { items: ContentItem[] }) => {
     const [expandedItems, setExpandedItems] = useState<string[]>([]);
+    const [showReviews, setShowReviews] = useState<Record<string, boolean>>({});
+    const [showComments, setShowComments] = useState<Record<string, boolean>>(
+      {}
+    );
 
     const toggleExpand = (itemId: string) => {
       setExpandedItems((prev) =>
@@ -240,6 +325,14 @@ export default function WebsiteSettings() {
           ? prev.filter((id) => id !== itemId)
           : [...prev, itemId]
       );
+    };
+
+    const toggleReviews = (itemId: string) => {
+      setShowReviews((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
+    };
+
+    const toggleComments = (itemId: string) => {
+      setShowComments((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
     };
 
     return (
@@ -273,6 +366,52 @@ export default function WebsiteSettings() {
               </a>
             </div>
 
+            {/* Categories and Tags */}
+            {((item.categories?.length ?? 0) > 0 ||
+              (item.tags?.length ?? 0) > 0) && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {item.categories?.map((cat) => (
+                  <span
+                    key={cat.id}
+                    className="px-2 py-1 text-xs bg-brand-lavender-light/10 rounded-full"
+                  >
+                    {cat.name}
+                  </span>
+                ))}
+                {item.tags?.map((tag) => (
+                  <span
+                    key={tag.id}
+                    className="px-2 py-1 text-xs bg-brand-accent/10 rounded-full"
+                  >
+                    #{tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Product-specific information */}
+            {item.type === "product" && (
+              <div className="mb-3 space-y-2">
+                <div className="flex items-center gap-4">
+                  {item.price && (
+                    <span className="text-lg font-semibold text-brand-accent">
+                      ${item.price}
+                    </span>
+                  )}
+                  {item.salePrice && item.regularPrice && (
+                    <span className="text-sm text-brand-text-secondary line-through">
+                      ${item.regularPrice}
+                    </span>
+                  )}
+                  {item.stockQuantity !== undefined && (
+                    <span className="text-sm text-brand-text-secondary">
+                      Stock: {item.stockQuantity}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Description / content snippet */}
             <div className="text-sm text-brand-text-secondary mb-3">
               <p
@@ -280,7 +419,6 @@ export default function WebsiteSettings() {
                   expandedItems.includes(item.id) ? "" : "line-clamp-2"
                 }
               >
-                {/* For WP posts, maybe 'item.content'; for products, 'item.description' */}
                 {item.content ?? item.description}
               </p>
               <button
@@ -290,6 +428,85 @@ export default function WebsiteSettings() {
                 {expandedItems.includes(item.id) ? "Show less" : "Read more..."}
               </button>
             </div>
+
+            {/* Reviews section for products */}
+            {item.type === "product" && (item.reviews?.length ?? 0) > 0 && (
+              <div className="mt-4 border-t border-brand-lavender-light/20 pt-4">
+                <button
+                  onClick={() => toggleReviews(item.id)}
+                  className="text-brand-accent hover:text-brand-accent/80 transition-colors"
+                >
+                  {showReviews[item.id]
+                    ? "Hide Reviews"
+                    : `Show Reviews (${item.reviews?.length ?? 0})`}
+                </button>
+
+                {showReviews[item.id] && (
+                  <div className="mt-3 space-y-3">
+                    {item.reviews?.map((review) => (
+                      <div
+                        key={review.id}
+                        className="p-3 bg-brand-lavender-light/5 rounded-lg"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">{review.reviewer}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-yellow-400">
+                              {"★".repeat(review.rating)}
+                              {"☆".repeat(5 - review.rating)}
+                            </span>
+                            {review.verified && (
+                              <span className="text-xs text-green-500">
+                                Verified Purchase
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-sm">{review.review}</p>
+                        <span className="text-xs text-brand-text-secondary mt-2 block">
+                          {new Date(review.date).toLocaleDateString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Comments section for posts */}
+            {item.type === "post" && (item.comments?.length ?? 0) > 0 && (
+              <div className="mt-4 border-t border-brand-lavender-light/20 pt-4">
+                <button
+                  onClick={() => toggleComments(item.id)}
+                  className="text-brand-accent hover:text-brand-accent/80 transition-colors"
+                >
+                  {showComments[item.id]
+                    ? "Hide Comments"
+                    : `Show Comments (${item.comments?.length ?? 0})`}
+                </button>
+
+                {showComments[item.id] && (
+                  <div className="mt-3 space-y-3">
+                    {item.comments?.map((comment) => (
+                      <div
+                        key={comment.id}
+                        className={`p-3 bg-brand-lavender-light/5 rounded-lg ${
+                          comment.parentId ? "ml-8" : ""
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">{comment.author}</span>
+                          <span className="text-xs text-brand-text-secondary">
+                            {new Date(comment.date).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-sm">{comment.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Footer */}
             <div className="flex items-center justify-between text-xs text-brand-text-secondary border-t border-brand-lavender-light/20 pt-3">
@@ -322,7 +539,7 @@ export default function WebsiteSettings() {
   // Setup Modal Component
   const SetupModal = () => {
     const type = websiteData?.type.toLowerCase() || "";
-    const isWordPress = type === "wordpress";
+    const isWordPress = type === "WordPress";
     const instructions = isWordPress
       ? setupInstructions.wordpress
       : setupInstructions.shopify;
@@ -555,6 +772,26 @@ export default function WebsiteSettings() {
           </p>
         </div>
         <div className="flex gap-4">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleToggleStatus}
+            disabled={isToggling}
+            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-colors ${
+              status === "active"
+                ? "bg-brand-accent/10 text-brand-accent hover:bg-brand-accent/20"
+                : "bg-brand-lavender-dark text-white hover:bg-brand-lavender-dark/90"
+            } ${isToggling ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            <FaPowerOff
+              className={`w-4 h-4 ${isToggling ? "animate-spin" : ""}`}
+            />
+            {isToggling
+              ? "Updating..."
+              : status === "active"
+              ? "Deactivate"
+              : "Activate"}
+          </motion.button>
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}

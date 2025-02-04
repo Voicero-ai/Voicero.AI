@@ -3,6 +3,34 @@ import { getServerSession } from "next-auth/next";
 import prisma from "@/lib/prisma";
 import { authOptions } from "../auth/[...nextauth]/route";
 
+interface WebsiteWithCounts {
+  id: string;
+  url: string;
+  name: string | null;
+  type: string;
+  plan: string;
+  active: boolean;
+  renewsOn: Date | null;
+  stripeId: string | null;
+  monthlyQueries: number;
+  syncFrequency: string;
+  lastSyncedAt: Date | null;
+  createdAt: Date;
+  _count: {
+    [key: string]: number;
+  };
+}
+
+interface TransformedWebsite extends Omit<WebsiteWithCounts, "_count"> {
+  queryLimit: number;
+  content: {
+    products: number;
+    blogPosts: number;
+    pages: number;
+  };
+  status: "active" | "inactive";
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -15,37 +43,35 @@ export async function GET() {
       where: {
         userId: session.user.id,
       },
-      select: {
-        id: true,
-        url: true,
-        name: true,
-        type: true,
-        plan: true,
-        active: true,
-        renewsOn: true,
-        stripeId: true,
-        monthlyQueries: true,
-        syncFrequency: true,
-        lastSyncedAt: true,
-        createdAt: true,
+      include: {
+        _count: true,
       },
       orderBy: {
         createdAt: "desc",
       },
     });
 
-    // Transform data to match the UI requirements
-    const transformedWebsites = websites.map((website) => ({
-      ...website,
-      queryLimit: website.plan === "Pro" ? 50000 : 10000, // Example limits based on plan
-      content: {
-        // You can add these fields to your schema later
-        products: 0,
-        blogPosts: 0,
-        pages: 0,
-      },
-      status: website.active ? "active" : "inactive",
-    }));
+    const transformedWebsites: TransformedWebsite[] = websites.map(
+      (website) => ({
+        ...website,
+        queryLimit: website.plan === "Pro" ? 50000 : 10000,
+        content: {
+          products:
+            website.type === "WordPress"
+              ? website._count.products
+              : website._count.shopifyProducts,
+          blogPosts:
+            website.type === "WordPress"
+              ? website._count.posts
+              : website._count.shopifyBlog || 0,
+          pages:
+            website.type === "WordPress"
+              ? website._count.pages
+              : website._count.shopifyPages,
+        },
+        status: website.active ? "active" : "inactive",
+      })
+    );
 
     return NextResponse.json(transformedWebsites);
   } catch (error) {
