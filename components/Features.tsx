@@ -2,96 +2,132 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { FaShopify, FaWordpress, FaMicrophone, FaSearch } from "react-icons/fa";
-import type { IconType } from "react-icons";
+import { useInView } from "react-intersection-observer";
+import {
+  FaRobot,
+  FaBrain,
+  FaChartLine,
+  FaBolt,
+  FaShieldAlt,
+  FaTools,
+} from "react-icons/fa";
 
-interface Feature {
-  title: string;
-  description: string;
-  icon: IconType;
-  color: string;
-}
-
-const features: Feature[] = [
+const features = [
   {
-    title: "Shopify Integration",
+    icon: FaRobot,
+    title: "AI-Powered Analysis",
     description:
-      "Seamlessly integrate Voicero.AI with your Shopify store to help customers find products instantly.",
-    icon: FaShopify,
-    color: "bg-gradient-to-r from-brand-accent to-brand-lavender-dark",
+      "Leverage advanced machine learning algorithms to extract meaningful insights from your data automatically.",
   },
   {
-    title: "WordPress Integration",
+    icon: FaBrain,
+    title: "Smart Learning",
     description:
-      "Add AI-powered voice search to your WordPress site with just a few clicks.",
-    icon: FaWordpress,
-    color: "bg-gradient-to-r from-brand-accent to-brand-lavender-dark",
+      "Our system continuously learns and adapts to your specific needs and patterns.",
   },
   {
-    title: "Voice Commands",
+    icon: FaChartLine,
+    title: "Real-time Analytics",
     description:
-      "Natural language processing that understands context and delivers accurate results.",
-    icon: FaMicrophone,
-    color: "bg-gradient-to-r from-brand-accent to-brand-lavender-dark",
+      "Monitor and analyze your data in real-time with interactive dashboards and visualizations.",
   },
   {
-    title: "Universal Search",
+    icon: FaBolt,
+    title: "Lightning Fast",
     description:
-      "Search through any website's content, including text, images, and hidden elements.",
-    icon: FaSearch,
-    color: "bg-gradient-to-r from-brand-accent to-brand-lavender-dark",
+      "Experience blazing-fast performance with our optimized processing engine.",
+  },
+  {
+    icon: FaShieldAlt,
+    title: "Enterprise Security",
+    description:
+      "Rest easy knowing your data is protected with enterprise-grade security measures.",
+  },
+  {
+    icon: FaTools,
+    title: "Customizable Tools",
+    description:
+      "Tailor the platform to your needs with our extensive suite of customization options.",
   },
 ];
 
 export default function Features() {
+  const { ref, inView } = useInView({
+    threshold: 0.1,
+    triggerOnce: true,
+  });
+
+  const containerVariants = {
+    hidden: {},
+    visible: {
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: {
+      opacity: 0,
+      y: 20,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+      },
+    },
+  };
+
   return (
-    <motion.section
-      id="features"
-      className="section-container section-container-features py-24 bg-gradient-to-b from-white to-brand-lavender-light/10"
-    >
+    <section className="py-20 bg-gradient-to-b from-white via-brand-lavender-light/10 to-white">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-brand-text-primary">
-            Powerful Features for Modern Browsing
+          <h2 className="text-4xl font-bold text-brand-dark mb-4">
+            Powerful Features
           </h2>
-          <p className="text-brand-text-secondary text-lg max-w-2xl mx-auto">
-            Transform how users interact with your website using voice commands
+          <p className="text-xl text-brand-dark/70 max-w-3xl mx-auto">
+            Discover the tools and capabilities that make our platform the leading choice
+            for businesses worldwide.
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+        <motion.div
+          ref={ref}
+          variants={containerVariants}
+          initial="hidden"
+          animate={inView ? "visible" : "hidden"}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+        >
           {features.map((feature, index) => (
             <motion.div
-              key={feature.title}
-              initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="flex items-start gap-6 p-8 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300"
+              key={index}
+              variants={itemVariants}
+              className="group"
             >
-              <div
-                className={`flex-shrink-0 w-16 h-16 rounded-2xl ${feature.color} flex items-center justify-center transform -rotate-6`}
-              >
-                <feature.icon className="w-8 h-8 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-2xl font-bold mb-3 text-brand-text-primary">
-                  {feature.title}
-                </h3>
-                <p className="text-brand-text-secondary leading-relaxed">
+              <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 h-full">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-brand-lavender-light rounded-lg flex items-center justify-center group-hover:bg-brand-accent transition-colors duration-300">
+                    <feature.icon className="text-2xl text-brand-accent group-hover:text-white transition-colors duration-300" />
+                  </div>
+                  <h3 className="text-xl font-bold text-brand-dark ml-4">
+                    {feature.title}
+                  </h3>
+                </div>
+                <p className="text-brand-dark/70">
                   {feature.description}
                 </p>
               </div>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
-    </motion.section>
+    </section>
   );
 }

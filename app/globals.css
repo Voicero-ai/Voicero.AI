@@ -3,89 +3,142 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
   body {
-    @apply text-brand-text-primary bg-white;
+    @apply text-brand-dark bg-white;
   }
+
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight text-brand-text-primary;
+    @apply font-semibold tracking-tight text-brand-dark;
   }
+
   p {
-    @apply text-brand-text-secondary;
+    @apply text-brand-dark/70;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center px-6 py-3 rounded-xl 
-    bg-gradient-to-r from-brand-accent to-brand-lavender-dark text-white font-medium
+    @apply inline-flex items-center justify-center rounded-xl 
+    bg-gradient-to-r from-brand-accent to-brand-accent-dark text-white font-medium
     hover:opacity-90 transition-all duration-200
-    focus:outline-none focus:ring-2 focus:ring-brand-accent focus:ring-offset-2;
+    focus:outline-none focus:ring-2 focus:ring-brand-accent focus:ring-offset-2
+    disabled:opacity-50 disabled:cursor-not-allowed;
   }
   
   .btn-secondary {
-    @apply inline-flex items-center justify-center px-6 py-3 rounded-xl 
+    @apply inline-flex items-center justify-center rounded-xl 
     bg-brand-lavender-light text-brand-accent font-medium
-    hover:bg-brand-lavender-medium/20 transition-all duration-200
-    focus:outline-none focus:ring-2 focus:ring-brand-accent focus:ring-offset-2;
+    hover:bg-brand-lavender-medium transition-all duration-200
+    focus:outline-none focus:ring-2 focus:ring-brand-accent focus:ring-offset-2
+    disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .card {
-    @apply bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200
-    border border-brand-lavender-light/50;
+    @apply bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300
+    border border-brand-lavender-light;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-brand-accent to-brand-accent-dark 
+    bg-clip-text text-transparent;
   }
 }
 
+/* Custom Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 3s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 15s linear infinite;
+}
+
+/* Gradient Backgrounds */
+.bg-gradient-primary {
+  @apply bg-gradient-to-r from-brand-accent via-brand-accent-light to-brand-accent;
+  background-size: 200% 200%;
+  animation: gradient-x 15s ease infinite;
+}
+
+.bg-gradient-secondary {
+  @apply bg-gradient-to-br from-brand-lavender-light via-white to-brand-lavender-light/30;
+}
+
+/* Section Containers */
 .section-container {
   @apply my-6 mx-6 p-6 rounded-xl;
-  box-shadow: 0 4px 6px -1px rgba(147, 51, 234, 0.1), 0 2px 4px -1px rgba(147, 51, 234, 0.06);
-}
-
-@keyframes wave-hero {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-@keyframes wave-features {
-  0% {
-    background-position: 100% 50%;
-  }
-  50% {
-    background-position: 0% 50%;
-  }
-  100% {
-    background-position: 100% 50%;
-  }
+  box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.1), 0 2px 4px -1px rgba(139, 92, 246, 0.06);
 }
 
 .section-container-hero {
-  background: linear-gradient(145deg, #f3f4f6 0%, #e5e7eb 30%, #ddd6fe 60%, #c4b5fd 100%);
+  @apply bg-gradient-to-b from-brand-lavender-light/20 via-white to-white;
   margin-top: 5rem;
-  border-top: 4px solid rgba(196, 181, 253, 0.3);
-  background-size: 300% 300%;
-  animation: wave-hero 6s ease-in-out infinite;
 }
 
 .section-container-features {
-  background: linear-gradient(225deg, #f3f4f6 0%, #e5e7eb 30%, #ddd6fe 60%, #c4b5fd 100%);
-  background-size: 300% 300%;
-  animation: wave-features 6s ease-in-out infinite;
+  @apply bg-gradient-to-b from-white via-brand-lavender-light/10 to-white;
 }
 
 .section-container-demo {
-  background: linear-gradient(45deg, #f3f4f6 0%, #e5e7eb 30%, #ddd6fe 60%, #c4b5fd 100%);
+  @apply bg-gradient-to-b from-white to-brand-lavender-light/20;
 }
 
 .section-container-pricing {
-  background: linear-gradient(315deg, #f3f4f6 0%, #e5e7eb 30%, #ddd6fe 60%, #c4b5fd 100%);
+  @apply bg-gradient-to-b from-white to-brand-lavender-light/20;
 }
 
 .section-container-cta {
-  background: linear-gradient(180deg, #f3f4f6 0%, #e5e7eb 30%, #ddd6fe 60%, #c4b5fd 100%);
+  @apply bg-gradient-to-br from-brand-lavender-light via-white to-brand-lavender-light/30;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-brand-lavender-light/30;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-brand-accent/50 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-brand-accent;
 }
