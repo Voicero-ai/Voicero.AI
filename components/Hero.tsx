@@ -1,11 +1,23 @@
 "use client";
 
-import React from "react";
-import { motion } from "framer-motion";
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import AnimatedComputer from "./AnimatedComputer";
+import { FaShopify, FaWordpress } from "react-icons/fa";
 
 export default function Hero() {
+  const [showPlatformPopup, setShowPlatformPopup] = useState(false);
+
+  const handlePlatformSelect = (platform: string) => {
+    if (platform === 'shopify') {
+      window.open('https://www.shopify.com/', '_blank');
+    } else if (platform === 'wordpress') {
+      window.open('https://wordpress.com/', '_blank');
+    }
+    setShowPlatformPopup(false);
+  };
+
   const scrollToDemo = (e: React.MouseEvent) => {
     e.preventDefault();
     const demoSection = document.getElementById("demo");
@@ -50,20 +62,130 @@ export default function Hero() {
               </div>
             </h1>
             <p className="text-xl text-brand-dark/70 mb-8 leading-relaxed">
-              Harness the power of artificial intelligence to create seamless, 
-              intelligent interactions that drive engagement and boost productivity.
+              Transform your e-commerce store with our cutting-edge AI that predicts and adapts to customer behavior in real-time. Our intelligent system learns from every interaction, automatically optimizing your product placement, search results, and recommendations to maximize conversions. With proven results of increasing conversion rates by up to 300%, our AI-powered platform seamlessly integrates with your existing store while continuously evolving to stay ahead of customer trends.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link
-                href="/demo"
-                className="btn-primary text-lg px-8 py-4"
+              <motion.button
+                whileHover={{ 
+                  scale: 1.02,
+                  boxShadow: "0 10px 30px -10px rgba(126, 58, 242, 0.4)"
+                }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => window.location.href = '/demo'}
+                className="relative overflow-hidden bg-gradient-to-r from-brand-accent to-[#9F5EF0] text-white rounded-xl text-lg px-8 py-4 font-medium transition-all duration-300 hover:from-[#9F5EF0] hover:to-brand-accent"
               >
-                Try Demo
-              </Link>
-              <Link href="/contact" className="btn-secondary text-lg px-8 py-4">
-                Contact Sales
-              </Link>
+                <motion.span
+                  className="relative z-10 flex items-center justify-center gap-2"
+                  whileHover={{ y: -2 }}
+                >
+                  Try Demo
+                  <motion.span
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    →
+                  </motion.span>
+                </motion.span>
+              </motion.button>
+              <motion.button 
+                whileHover={{ 
+                  scale: 1.02,
+                  boxShadow: "0 10px 30px -10px rgba(126, 58, 242, 0.3)"
+                }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setShowPlatformPopup(true)}
+                className="relative overflow-hidden border-2 border-brand-accent/20 bg-white text-brand-accent rounded-xl text-lg px-8 py-4 font-medium transition-all duration-300 hover:border-brand-accent/40 hover:bg-brand-accent/5"
+              >
+                <motion.span
+                  className="relative z-10 flex items-center justify-center gap-2"
+                  whileHover={{ y: -2 }}
+                >
+                  Get Started
+                  <motion.span
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    →
+                  </motion.span>
+                </motion.span>
+              </motion.button>
             </div>
+
+            {/* Platform Selection Popup */}
+            <AnimatePresence>
+              {showPlatformPopup && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                  onClick={() => setShowPlatformPopup(false)}
+                >
+                  <motion.div
+                    className="bg-white rounded-xl p-8 shadow-2xl max-w-md w-full mx-4"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <h2 className="text-2xl font-bold text-brand-dark mb-6 text-center">
+                      Choose Your Platform
+                    </h2>
+                    <div className="flex flex-col gap-4">
+                      <motion.button
+                        whileHover={{ 
+                          scale: 1.02,
+                          boxShadow: "0 10px 30px -10px rgba(126, 58, 242, 0.4)"
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handlePlatformSelect('shopify')}
+                        className="relative overflow-hidden bg-gradient-to-r from-[#95BF47] to-[#5E8E3E] text-white rounded-xl text-lg py-4 font-medium transition-all duration-300 hover:from-[#5E8E3E] hover:to-[#95BF47]"
+                      >
+                        <motion.span
+                          className="relative z-10 flex items-center justify-center gap-3"
+                          whileHover={{ y: -2 }}
+                        >
+                          <FaShopify className="w-6 h-6" />
+                          Shopify
+                          <motion.span
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="ml-1"
+                          >
+                            →
+                          </motion.span>
+                        </motion.span>
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ 
+                          scale: 1.02,
+                          boxShadow: "0 10px 30px -10px rgba(33, 117, 155, 0.4)"
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handlePlatformSelect('wordpress')}
+                        className="relative overflow-hidden bg-gradient-to-r from-[#21759B] to-[#464646] text-white rounded-xl text-lg py-4 font-medium transition-all duration-300 hover:from-[#464646] hover:to-[#21759B]"
+                      >
+                        <motion.span
+                          className="relative z-10 flex items-center justify-center gap-3"
+                          whileHover={{ y: -2 }}
+                        >
+                          <FaWordpress className="w-6 h-6" />
+                          WordPress
+                          <motion.span
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="ml-1"
+                          >
+                            →
+                          </motion.span>
+                        </motion.span>
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 mt-12">

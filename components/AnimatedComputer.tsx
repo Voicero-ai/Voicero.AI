@@ -422,7 +422,8 @@ export default function AnimatedComputer() {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              className="absolute top-4 right-4 z-50 bg-gradient-to-r from-brand-accent to-brand-accent/80 p-4 rounded-full shadow-xl cursor-pointer hover:shadow-2xl hover:scale-105 transition-all duration-300"
+              whileHover={{ scale: 1.1, boxShadow: "0 0 15px rgba(126, 58, 242, 0.6)" }}
+              className="absolute top-4 right-4 z-50 bg-gradient-to-r from-[#E0BBE4] to-[#957DAD] p-4 rounded-full shadow-xl cursor-pointer transition-all duration-300"
               onClick={() => setIsMinimized(false)}
             >
               <FaRobot className="w-6 h-6 text-white" />
@@ -432,30 +433,47 @@ export default function AnimatedComputer() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="absolute top-4 left-0 right-0 z-50 mx-4 bg-white rounded-lg shadow-xl border border-brand-accent/20"
+              whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(126, 58, 242, 0.2)" }}
+              className="absolute top-4 left-0 right-0 z-50 mx-4 bg-gradient-to-br from-white via-white to-brand-accent/5 rounded-lg shadow-xl border border-brand-accent/20 transition-all duration-300 hover:border-brand-accent/30"
             >
-              <div className="p-4 flex items-center justify-between border-b border-brand-accent/20 bg-brand-accent/5">
+              <div className="p-4 flex items-center justify-between border-b border-brand-accent/20 bg-gradient-to-r from-[#E0BBE4]/10 to-[#957DAD]/10">
                 <div className="flex items-center gap-3">
-                  <FaMicrophone className="w-5 h-5 text-brand-accent" />
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 15 }}
+                    className="text-brand-accent"
+                  >
+                    <FaMicrophone className="w-5 h-5" />
+                  </motion.div>
                   <span className="text-brand-accent font-medium">AI Assistant</span>
                 </div>
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setIsMinimized(true)}
                   className="hover:bg-brand-accent/10 rounded-full p-2 transition-colors"
                 >
                   <FaPlus className="w-4 h-4 text-brand-accent transform rotate-45" />
-                </button>
+                </motion.button>
               </div>
-              <div className="p-6 space-y-4">
-                <div className="flex items-start gap-3">
+              <motion.div 
+                className="p-6 space-y-4 bg-gradient-to-br from-white via-white to-[#E0BBE4]/10"
+                whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+              >
+                <motion.div 
+                  className="flex items-start gap-3 p-3 rounded-lg bg-white/80 transition-all duration-300"
+                  whileHover={{ scale: 1.02, boxShadow: "0 0 10px rgba(126, 58, 242, 0.2)", backgroundColor: "rgba(255, 255, 255, 1)" }}
+                >
                   <span className="text-sm font-medium text-brand-text-secondary">User:</span>
                   <span className="text-sm text-brand-text-primary flex-1">{typedText}</span>
-                </div>
-                <div className="flex items-start gap-3">
+                </motion.div>
+                <motion.div 
+                  className="flex items-start gap-3 p-3 rounded-lg bg-white/80 transition-all duration-300"
+                  whileHover={{ scale: 1.02, boxShadow: "0 0 10px rgba(126, 58, 242, 0.2)", backgroundColor: "rgba(255, 255, 255, 1)" }}
+                >
                   <span className="text-sm font-medium text-brand-text-secondary">AI:</span>
                   <span className="text-sm text-brand-accent flex-1">{displayMessage}</span>
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
