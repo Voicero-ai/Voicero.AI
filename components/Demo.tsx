@@ -1,230 +1,146 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { FaMicrophone, FaRobot, FaKeyboard, FaHeadset } from "react-icons/fa";
-import AnimatedComputer from "./AnimatedComputer";
+import { useInView } from "react-intersection-observer";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+
+const generateData = (days: number) => {
+  const data = [];
+  for (let i = 0; i < days; i++) {
+    data.push({
+      name: `Day ${i + 1}`,
+      value: Math.floor(Math.random() * 100) + 50,
+      efficiency: Math.floor(Math.random() * 30) + 70,
+    });
+  }
+  return data;
+};
+
+const chartData = generateData(30);
 
 const demoFeatures = [
   {
-    icon: FaMicrophone,
-    title: "Voice Commands",
-    description: "Speak naturally to navigate websites",
+    title: "Real-time Analytics",
+    description: "Watch as your data transforms into actionable insights instantly.",
   },
   {
-    icon: FaKeyboard,
-    title: "Text Input",
-    description: "Type your questions when voice isn't ideal",
+    title: "Predictive Analysis",
+    description: "See future trends based on historical data patterns.",
   },
   {
-    icon: FaRobot,
-    title: "Smart AI",
-    description: "Context-aware responses and navigation",
-  },
-  {
-    icon: FaHeadset,
-    title: "Multi-Modal",
-    description: "Switch between voice and text seamlessly",
+    title: "Performance Metrics",
+    description: "Track key performance indicators in real-time.",
   },
 ];
 
 export default function Demo() {
+  const [activeTab, setActiveTab] = useState(0);
+  const { ref, inView } = useInView({
+    threshold: 0.1,
+    triggerOnce: true,
+  });
+
+  const tabVariants = {
+    inactive: {
+      opacity: 0.5,
+      y: 0,
+    },
+    active: {
+      opacity: 1,
+      y: -5,
+    },
+  };
+
   return (
-    <section id="demo" className="section-container section-container-demo py-24 bg-white">
+    <section id="demo" className="py-20 bg-gradient-to-b from-white to-brand-lavender-light/20">
       <div className="container mx-auto px-4">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="max-w-3xl mx-auto text-center mb-16"
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-brand-text-primary">
-            See How It Works
+          <h2 className="text-4xl font-bold text-brand-dark mb-4">
+            See It in Action
           </h2>
-          <p className="text-lg text-brand-text-secondary mb-8">
-            Watch Voicero.AI in action as it helps users navigate through
-            websites using natural language
+          <p className="text-xl text-brand-dark/70 max-w-3xl mx-auto">
+            Experience the power of our platform through interactive demonstrations
+            and real-time data visualization.
           </p>
-
-          {/* Feature Pills */}
-          <div className="flex flex-wrap justify-center gap-3">
-            {demoFeatures.map((feature) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                className="bg-brand-lavender-light/20 px-4 py-2 rounded-full 
-                         flex items-center gap-2 text-sm text-brand-text-secondary"
-              >
-                <feature.icon className="w-4 h-4 text-brand-accent" />
-                <span>{feature.title}</span>
-              </motion.div>
-            ))}
-          </div>
         </motion.div>
 
-        {/* Interactive Demo */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="max-w-6xl mx-auto mb-24 pt-16"
-        >
-          <div className="relative">
-            <AnimatedComputer />
+        <div ref={ref} className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Interactive Chart */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={inView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.8 }}
+            className="bg-white p-6 rounded-xl shadow-lg"
+          >
+            <div className="h-[400px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#8b5cf6"
+                    strokeWidth={2}
+                    dot={false}
+                    animationDuration={2000}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="efficiency"
+                    stroke="#6366f1"
+                    strokeWidth={2}
+                    dot={false}
+                    animationDuration={2000}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
 
-            {/* Decorative background elements */}
-            <div className="absolute -z-10 inset-0 bg-gradient-to-b from-brand-lavender-light/5 to-transparent rounded-3xl transform scale-105 blur-xl" />
-            <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-brand-accent/5 rounded-full blur-3xl" />
-          </div>
-        </motion.div>
-
-        {/* Demo Instructions - Now at bottom */}
-        <div className="max-w-5xl mx-auto relative">
-          {/* Background decorative element */}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-brand-lavender-light/5 to-transparent rounded-3xl transform scale-105 -z-10" />
-
-          <div className="relative grid md:grid-cols-3 gap-8 md:gap-12">
-            {/* Connecting lines (visible only on md screens and up) */}
-            <div
-              className="hidden md:block absolute top-1/2 left-[33%] right-[67%] h-1 
-                          bg-gradient-to-r from-brand-accent/30 to-brand-accent 
-                          transform -translate-y-1/2 z-0"
-            />
-            <div
-              className="hidden md:block absolute top-1/2 left-[67%] right-[33%] h-1 
-                          bg-gradient-to-r from-brand-accent to-brand-accent/30 
-                          transform -translate-y-1/2 z-0"
-            />
-
-            {/* Step Cards - Updated with new hover effects */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              whileHover={{
-                scale: 1.05,
-                transition: { duration: 0.2 },
-              }}
-              className="relative z-10 text-center p-8 rounded-2xl
-                         bg-gradient-to-br from-white via-brand-lavender-light/10 to-transparent
-                         hover:from-white hover:via-brand-lavender-light/20 hover:to-transparent
-                         transition-all duration-300 shadow-lg hover:shadow-xl
-                         border border-brand-accent/10 hover:border-brand-accent/30
-                         backdrop-blur-sm group"
-            >
-              <div
-                className="w-16 h-16 bg-gradient-to-br from-brand-accent/20 to-brand-accent/10 
-                            rounded-2xl flex items-center justify-center mx-auto mb-6
-                            shadow-inner group-hover:scale-110 transition-transform duration-300
-                            border border-brand-accent/20 group-hover:border-brand-accent/40"
-              >
-                <span
-                  className="text-3xl font-bold bg-gradient-to-r from-brand-accent to-brand-accent/70 
-                               bg-clip-text text-transparent"
+          {/* Feature Tabs */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={inView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.8 }}
+          >
+            <div className="space-y-6">
+              {demoFeatures.map((feature, index) => (
+                <motion.div
+                  key={index}
+                  variants={tabVariants}
+                  animate={activeTab === index ? "active" : "inactive"}
+                  className={`p-6 rounded-xl cursor-pointer transition-all duration-300 ${
+                    activeTab === index
+                      ? "bg-brand-accent text-white shadow-lg"
+                      : "bg-white hover:bg-brand-lavender-light/50"
+                  }`}
+                  onClick={() => setActiveTab(index)}
                 >
-                  1
-                </span>
-              </div>
-              <h3
-                className="text-xl font-semibold mb-3
-                           bg-gradient-to-r from-brand-text-primary to-brand-accent 
-                           bg-clip-text text-transparent"
-              >
-                Ask a Question
-              </h3>
-              <p className="text-sm text-brand-text-secondary">
-                Use voice or text to ask about website content
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              whileHover={{
-                scale: 1.05,
-                transition: { duration: 0.2 },
-              }}
-              className="relative z-10 text-center p-8 rounded-2xl
-                         bg-gradient-to-br from-white via-brand-lavender-light/10 to-transparent
-                         hover:from-white hover:via-brand-lavender-light/20 hover:to-transparent
-                         transition-all duration-300 shadow-lg hover:shadow-xl
-                         border border-brand-accent/10 hover:border-brand-accent/30
-                         backdrop-blur-sm group"
-            >
-              <div
-                className="w-16 h-16 bg-gradient-to-br from-brand-accent/20 to-brand-accent/10 
-                            rounded-2xl flex items-center justify-center mx-auto mb-6
-                            shadow-inner group-hover:scale-110 transition-transform duration-300
-                            border border-brand-accent/20 group-hover:border-brand-accent/40"
-              >
-                <span
-                  className="text-3xl font-bold bg-gradient-to-r from-brand-accent to-brand-accent/70 
-                               bg-clip-text text-transparent"
-                >
-                  2
-                </span>
-              </div>
-              <h3
-                className="text-xl font-semibold mb-3
-                           bg-gradient-to-r from-brand-text-primary to-brand-accent 
-                           bg-clip-text text-transparent"
-              >
-                AI Processing
-              </h3>
-              <p className="text-sm text-brand-text-secondary">
-                Our AI understands and locates relevant information
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              whileHover={{
-                scale: 1.05,
-                transition: { duration: 0.2 },
-              }}
-              className="relative z-10 text-center p-8 rounded-2xl
-                         bg-gradient-to-br from-white via-brand-lavender-light/10 to-transparent
-                         hover:from-white hover:via-brand-lavender-light/20 hover:to-transparent
-                         transition-all duration-300 shadow-lg hover:shadow-xl
-                         border border-brand-accent/10 hover:border-brand-accent/30
-                         backdrop-blur-sm group"
-            >
-              <div
-                className="w-16 h-16 bg-gradient-to-br from-brand-accent/20 to-brand-accent/10 
-                            rounded-2xl flex items-center justify-center mx-auto mb-6
-                            shadow-inner group-hover:scale-110 transition-transform duration-300
-                            border border-brand-accent/20 group-hover:border-brand-accent/40"
-              >
-                <span
-                  className="text-3xl font-bold bg-gradient-to-r from-brand-accent to-brand-accent/70 
-                               bg-clip-text text-transparent"
-                >
-                  3
-                </span>
-              </div>
-              <h3
-                className="text-xl font-semibold mb-3
-                           bg-gradient-to-r from-brand-text-primary to-brand-accent 
-                           bg-clip-text text-transparent"
-              >
-                Instant Results
-              </h3>
-              <p className="text-sm text-brand-text-secondary">
-                Get guided directly to what you're looking for
-              </p>
-            </motion.div>
-          </div>
+                  <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                  <p className={activeTab === index ? "text-white/90" : "text-brand-dark/70"}>
+                    {feature.description}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </div>
     </section>
