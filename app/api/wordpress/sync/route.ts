@@ -17,6 +17,41 @@ interface SyncStats {
   };
 }
 
+function cleanContent(content: string): string {
+  if (!content) return "";
+
+  try {
+    // Create a DOMParser-like environment in Node.js
+    const { JSDOM } = require("jsdom");
+    const dom = new JSDOM(content);
+    const doc = dom.window.document;
+
+    // Get all text content, removing scripts and styles
+    const scripts = doc.getElementsByTagName("script");
+    const styles = doc.getElementsByTagName("style");
+    [...scripts, ...styles].forEach((el) => el.remove());
+
+    // Get the cleaned text content
+    const text = doc.body.textContent || doc.documentElement.textContent || "";
+
+    // Clean up whitespace
+    return text.replace(/\s+/g, " ").trim();
+  } catch (error) {
+    // Fallback if HTML parsing fails
+    console.warn("HTML parsing failed, falling back to basic cleaning:", error);
+    return content
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+}
+
+function parseAuthorId(authorId: any): number | null {
+  if (!authorId) return null;
+  const parsed = parseInt(authorId, 10);
+  return isNaN(parsed) ? null : parsed;
+}
+
 async function fetchWordPressData(baseUrl: string) {
   const results: any = {};
   const errors: any = {};
@@ -78,37 +113,56 @@ async function syncToDatabase(
     if (data.posts) {
       for (const post of data.posts) {
         try {
-          await prisma.wordpressPost.upsert({
+          if (!post || !post.id) {
+            console.warn("Skipping invalid post:", post);
+            continue;
+          }
+
+          const cleanedContent = cleanContent(post.content);
+          const cleanedTitle = cleanContent(post.title);
+
+          const result = await prisma.wordpressPost.upsert({
             where: {
               wpId: post.id,
             },
             update: {
-              title: post.title,
-              content: post.content,
-              excerpt: post.excerpt,
-              slug: post.slug,
-              link: post.link,
+              title: cleanedTitle,
+              content: cleanedContent,
+              slug: post.slug || "",
+              link: post.link || "",
               websiteId,
-              authorId: post.author,
+              authorId: parseAuthorId(post.author),
               updatedAt: now,
             },
             create: {
               wpId: post.id,
-              title: post.title,
-              content: post.content,
-              excerpt: post.excerpt,
-              slug: post.slug,
-              link: post.link,
+              title: cleanedTitle,
+              content: cleanedContent,
+              slug: post.slug || "",
+              link: post.link || "",
               websiteId,
-              authorId: post.author,
+              authorId: parseAuthorId(post.author),
               createdAt: now,
               updatedAt: now,
             },
           });
-          stats.created++;
+
+          if (result) {
+            stats.updated++;
+          } else {
+            stats.created++;
+          }
         } catch (error) {
-          console.error("Error syncing post:", error);
+          console.error("Error syncing post:", {
+            postId: post?.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
           stats.errors++;
+          if (!stats.details.posts) stats.details.posts = [];
+          stats.details.posts.push({
+            id: post?.id || 0,
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
       }
     }
@@ -117,24 +171,32 @@ async function syncToDatabase(
     if (data.pages) {
       for (const page of data.pages) {
         try {
+          if (!page || !page.id) {
+            console.warn("Skipping invalid page:", page);
+            continue;
+          }
+
+          const cleanedTitle = cleanContent(page.title);
+          const cleanedContent = cleanContent(page.content);
+
           await prisma.wordpressPage.upsert({
             where: {
               wpId: page.id,
             },
             update: {
-              title: page.title,
-              content: page.content,
-              slug: page.slug,
-              link: page.link,
+              title: cleanedTitle,
+              content: cleanedContent,
+              slug: page.slug || "",
+              link: page.link || "",
               websiteId,
               updatedAt: now,
             },
             create: {
               wpId: page.id,
-              title: page.title,
-              content: page.content,
-              slug: page.slug,
-              link: page.link,
+              title: cleanedTitle,
+              content: cleanedContent,
+              slug: page.slug || "",
+              link: page.link || "",
               websiteId,
               createdAt: now,
               updatedAt: now,
@@ -152,16 +214,27 @@ async function syncToDatabase(
     if (data.products) {
       for (const product of data.products) {
         try {
+          if (!product || !product.id) {
+            console.warn("Skipping invalid product:", product);
+            continue;
+          }
+
+          const cleanedName = cleanContent(product.name);
+          const cleanedDescription = cleanContent(product.description);
+          const cleanedShortDescription = cleanContent(
+            product.short_description
+          );
+
           await prisma.wordpressProduct.upsert({
             where: {
               wpId: product.id,
             },
             update: {
-              name: product.name,
-              slug: product.slug,
-              permalink: product.link,
-              description: product.description,
-              shortDescription: product.short_description,
+              name: cleanedName,
+              slug: product.slug || "",
+              permalink: product.link || "",
+              description: cleanedDescription,
+              shortDescription: cleanedShortDescription,
               price: parseFloat(product.price || "0"),
               regularPrice: product.regular_price
                 ? parseFloat(product.regular_price)
@@ -175,11 +248,11 @@ async function syncToDatabase(
             },
             create: {
               wpId: product.id,
-              name: product.name,
-              slug: product.slug,
-              permalink: product.link,
-              description: product.description,
-              shortDescription: product.short_description,
+              name: cleanedName,
+              slug: product.slug || "",
+              permalink: product.link || "",
+              description: cleanedDescription,
+              shortDescription: cleanedShortDescription,
               price: parseFloat(product.price || "0"),
               regularPrice: product.regular_price
                 ? parseFloat(product.regular_price)

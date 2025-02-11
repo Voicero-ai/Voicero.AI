@@ -68,6 +68,35 @@ async function deleteWebsiteVectors(websiteId: string) {
   }
 }
 
+function cleanContent(content: string): string {
+  if (!content) return "";
+
+  try {
+    // Create a DOMParser-like environment in Node.js
+    const { JSDOM } = require("jsdom");
+    const dom = new JSDOM(content);
+    const doc = dom.window.document;
+
+    // Get all text content, removing scripts and styles
+    const scripts = doc.getElementsByTagName("script");
+    const styles = doc.getElementsByTagName("style");
+    [...scripts, ...styles].forEach((el) => el.remove());
+
+    // Get the cleaned text content
+    const text = doc.body.textContent || doc.documentElement.textContent || "";
+
+    // Clean up whitespace
+    return text.replace(/\s+/g, " ").trim();
+  } catch (error) {
+    // Fallback if HTML parsing fails
+    console.warn("HTML parsing failed, falling back to basic cleaning:", error);
+    return content
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+}
+
 async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
   const stats: VectorizeStats = {
     added: 0,
@@ -106,20 +135,24 @@ async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
     // Add posts to vector store
     for (const post of posts) {
       try {
+        const cleanedTitle = cleanContent(post.title);
+        const cleanedContent = cleanContent(post.content);
+
         const embedding = await createEmbedding(
-          `${post.title}\n${post.content}`
+          `${cleanedTitle}\n${cleanedContent}`
         );
+
         await index.namespace(websiteId).upsert([
           {
             id: `post-${post.wpId}`,
             values: embedding,
             metadata: {
               type: "post",
-              title: post.title,
+              title: cleanedTitle,
+              content: cleanedContent,
               url: post.link,
               websiteId,
               dbId: post.id,
-              ...(post.excerpt && { excerpt: post.excerpt }),
               ...(post.authorId && { authorId: post.authorId }),
             },
           },
@@ -141,7 +174,9 @@ async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
       for (const comment of post.comments) {
         try {
           const embedding = await createEmbedding(
-            `Comment on post "${post.title}": ${comment.content}`
+            `Comment on post "${cleanContent(post.title)}": ${cleanContent(
+              comment.content
+            )}`
           );
           await index.namespace(websiteId).upsert([
             {
@@ -175,8 +210,11 @@ async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
     // Add pages to vector store
     for (const page of pages) {
       try {
+        const cleanedTitle = cleanContent(page.title);
+        const cleanedContent = cleanContent(page.content);
+
         const embedding = await createEmbedding(
-          `${page.title}\n${page.content}`
+          `${cleanedTitle}\n${cleanedContent}`
         );
         await index.namespace(websiteId).upsert([
           {
@@ -184,7 +222,8 @@ async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
             values: embedding,
             metadata: {
               type: "page",
-              title: page.title,
+              title: cleanedTitle,
+              content: cleanedContent,
               url: page.link,
               websiteId,
               dbId: page.id,
@@ -206,10 +245,14 @@ async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
     // Add products to vector store
     for (const product of products) {
       try {
+        const cleanedName = cleanContent(product.name);
+        const cleanedDescription = cleanContent(product.description);
+        const cleanedShortDescription = cleanContent(
+          product.shortDescription || ""
+        );
+
         const embedding = await createEmbedding(
-          `${product.name}\n${product.description}\n${
-            product.shortDescription || ""
-          }`
+          `${cleanedName}\n${cleanedDescription}\n${cleanedShortDescription}`
         );
         await index.namespace(websiteId).upsert([
           {
@@ -217,16 +260,15 @@ async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
             values: embedding,
             metadata: {
               type: "product",
-              name: product.name,
+              name: cleanedName,
+              description: cleanedDescription,
+              shortDescription: cleanedShortDescription,
               url: product.permalink,
               websiteId,
               price: product.price,
               dbId: product.id,
               reviewIds: product.reviews.map((r) => `review-${r.wpId}`),
               categoryIds: product.categories.map((c) => `category-${c.wpId}`),
-              ...(product.shortDescription && {
-                shortDescription: product.shortDescription,
-              }),
               ...(product.regularPrice && {
                 regularPrice: product.regularPrice,
               }),
@@ -255,7 +297,9 @@ async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
       for (const review of product.reviews) {
         try {
           const embedding = await createEmbedding(
-            `Review of product "${product.name}": ${review.review}`
+            `Review of product "${cleanContent(product.name)}": ${cleanContent(
+              review.review
+            )}`
           );
           await index.namespace(websiteId).upsert([
             {
