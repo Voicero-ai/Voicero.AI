@@ -11,10 +11,11 @@ import {
   FaCopy,
   FaCode,
 } from "react-icons/fa";
+import ReactMarkdown from "react-markdown";
 
 interface ChatMessage {
   id: string;
-  type: "user" | "ai";
+  type: "user" | "assistant";
   content: string;
   timestamp: string;
   metadata?: {
@@ -54,6 +55,7 @@ export default function ChatSession() {
         if (!response.ok) throw new Error("Failed to fetch chat session");
 
         const data = await response.json();
+        console.log("💬 Data:", data);
         setSession(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong");
@@ -135,66 +137,95 @@ export default function ChatSession() {
 
       {/* Chat Messages */}
       <div className="space-y-6">
-        {session.messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${
-              message.type === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
+        {session.messages.map((message) => {
+          console.log("Message type:", message.type);
+          return (
             <div
-              className={`max-w-[80%] ${
-                message.type === "user"
-                  ? "bg-brand-accent text-white rounded-2xl rounded-tr-sm"
-                  : "bg-white border border-brand-lavender-light/20 rounded-2xl rounded-tl-sm"
-              } p-4 shadow-sm`}
+              key={message.id}
+              className={`flex ${
+                message.type === "user" ? "justify-end" : "justify-start"
+              }`}
             >
-              <p
-                className={
+              <div
+                className={`max-w-[80%] ${
                   message.type === "user"
-                    ? "text-white"
-                    : "text-brand-text-primary"
-                }
+                    ? "bg-brand-accent text-white rounded-2xl rounded-tr-sm"
+                    : "bg-white border border-brand-lavender-light/20 rounded-2xl rounded-tl-sm"
+                } p-4 shadow-sm space-y-3`}
               >
-                {message.content}
-              </p>
+                {/* Message Content */}
+                <div
+                  className={
+                    message.type === "user"
+                      ? "text-white"
+                      : "text-brand-text-primary"
+                  }
+                >
+                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                </div>
 
-              {/* Metadata Display */}
-              {message.type === "ai" && message.metadata && (
-                <div className="mt-3 pt-3 border-t border-brand-lavender-light/20">
-                  {message.metadata.url && (
-                    <a
-                      href={`https://${session.website.domain}${message.metadata.url}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-brand-accent hover:text-brand-accent/80 transition-colors"
-                    >
-                      <FaExternalLinkAlt className="w-4 h-4" />
-                      View page
-                    </a>
-                  )}
-
-                  {message.metadata.scrollToText && (
-                    <div className="flex items-center gap-2 text-sm text-brand-accent">
-                      <FaArrowDown className="w-4 h-4" />
-                      Scrolled to &quot;{message.metadata.scrollToText}&quot;
+                {/* Metadata Display */}
+                {message.type === "assistant" &&
+                  message.metadata?.scrollToText && (
+                    <div className="mt-3 pt-3 border-t border-brand-lavender-light/20">
+                      <div className="flex items-center gap-2 text-sm text-brand-text-secondary">
+                        <div className="p-1.5 rounded-md bg-brand-lavender-light/10">
+                          <FaArrowDown className="w-3.5 h-3.5 text-brand-accent" />
+                        </div>
+                        <span>
+                          Scrolled to:{" "}
+                          <span className="font-medium text-brand-text-primary">
+                            &quot;{message.metadata.scrollToText}&quot;
+                          </span>
+                        </span>
+                      </div>
                     </div>
                   )}
-                </div>
-              )}
 
-              <div
-                className={`text-xs mt-2 ${
-                  message.type === "user"
-                    ? "text-white/80"
-                    : "text-brand-text-secondary"
-                }`}
-              >
-                {new Date(message.timestamp).toLocaleString()}
+                {/* URL Metadata if present */}
+                {message.type === "assistant" && message.metadata?.url && (
+                  <div className="mt-3 pt-3 border-t border-brand-lavender-light/20">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2 text-sm text-brand-text-secondary">
+                        <div className="p-1.5 rounded-md bg-brand-lavender-light/10">
+                          <FaExternalLinkAlt className="w-3.5 h-3.5 text-brand-accent" />
+                        </div>
+                        <span>Redirect to this page:</span>
+                      </div>
+
+                      <div className="flex flex-col gap-2 ml-7">
+                        <span className="text-sm text-brand-text-primary">
+                          {message.metadata.url}
+                        </span>
+
+                        <a
+                          href={`https://${session.website.domain}${message.metadata.url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 text-sm text-brand-accent hover:text-brand-accent/80 transition-colors w-fit"
+                        >
+                          <span className="underline">Click here</span>
+                          <FaExternalLinkAlt className="w-3 h-3" />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Timestamp */}
+                <div
+                  className={`text-xs ${
+                    message.type === "user"
+                      ? "text-white/80"
+                      : "text-brand-text-secondary"
+                  }`}
+                >
+                  {new Date(message.timestamp).toLocaleString()}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

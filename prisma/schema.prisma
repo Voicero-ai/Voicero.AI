@@ -452,6 +452,7 @@ model AiMessage {
   role         String // 'assistant' or 'user'
   content      String   @db.Text
   pageUrl      String? // URL to redirect to (if provided by AI)
+  type         String? // 'text' or 'voice'
   scrollToText String? // Text to scroll to on page (if provided by AI)
   createdAt    DateTime @default(now())
 

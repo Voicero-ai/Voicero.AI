@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find the website and its assistant
+    // Find the website and its assistant with query limit
     console.log(
       "🔍 Looking up website for access key:",
       accessKey.substring(0, 10) + "..."
@@ -58,6 +58,9 @@ export async function POST(request: NextRequest) {
       select: {
         id: true,
         aiAssistantId: true,
+        monthlyQueries: true,
+        queryLimit: true,
+        plan: true,
       },
     });
 
@@ -82,11 +85,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if website has exceeded query limit
+    if (website.monthlyQueries >= website.queryLimit) {
+      console.log("❌ Query limit exceeded");
+      return cors(
+        request,
+        NextResponse.json(
+          {
+            error: "Monthly query limit exceeded",
+            details: {
+              currentQueries: website.monthlyQueries,
+              limit: website.queryLimit,
+              plan: website.plan,
+            },
+          },
+          { status: 429 }
+        )
+      );
+    }
+
     // Get request body
-    const { message, context, threadId, isVoiceInput } = await request.json();
+    const {
+      message,
+      context,
+      threadId,
+      isVoiceInput,
+      pastPrompts = [],
+    } = await request.json();
     console.log("📝 User message:", message);
     console.log("🎤 Is voice input:", isVoiceInput);
     console.log("🌍 Raw context:", context);
+    console.log("📜 Past prompts:", pastPrompts);
 
     // If context.currentContent is empty, try to fetch content from database
     if (!context.currentContent && context.currentUrl) {
@@ -155,12 +184,21 @@ export async function POST(request: NextRequest) {
       namespace: website.id, // Use website ID as namespace
     });
 
-    // Search for relevant content
+    // Modify the search to include past prompts
     console.log("🔍 Searching for relevant content...");
-    const searchResults = await vectorStore.similaritySearch(message, 3);
+    const combinedSearchText = [message, ...pastPrompts].join(" ");
+    const searchResults = await vectorStore.similaritySearch(
+      combinedSearchText,
+      3
+    );
 
     // Create context message for this query
-    const contextMessage = `Relevant content for the query:
+    const contextMessage = `Previous messages for context:
+${pastPrompts
+  .map((prompt: any, i: number) => `Message ${i + 1}: ${prompt}`)
+  .join("\n")}
+
+Relevant content for the query:
 
 ${searchResults
   .map((doc, i) => {
@@ -284,16 +322,25 @@ Input type: ${isVoiceInput ? "Voice message" : "Text message"}`;
         threadId: aiThread.id,
         role: "user",
         content: message,
+        type: isVoiceInput ? "voice" : "text",
       },
     });
 
-    // First send the context for this query
+    // First send the context
     await openai.beta.threads.messages.create(openAiThreadId, {
       role: "user",
       content: `${contextMessage}`,
     });
 
-    // Then send the user's message with input type context
+    // Then send past prompts as separate messages
+    for (const pastPrompt of pastPrompts) {
+      await openai.beta.threads.messages.create(openAiThreadId, {
+        role: "user",
+        content: pastPrompt,
+      });
+    }
+
+    // Finally send the current message
     await openai.beta.threads.messages.create(openAiThreadId, {
       role: "user",
       content: `${isVoiceInput ? "[Voice Input] " : ""}${message}`,
@@ -385,13 +432,24 @@ Input type: ${isVoiceInput ? "Voice message" : "Text message"}`;
         threadId: aiThread.id,
         role: "assistant",
         content: JSON.stringify(aiResponse),
+        type: "text",
+      },
+    });
+
+    // After successful AI response, increment the monthly queries counter
+    await prisma.website.update({
+      where: { id: website.id },
+      data: {
+        monthlyQueries: {
+          increment: 1,
+        },
       },
     });
 
     return cors(
       request,
       NextResponse.json({
-        response: aiResponse, // Return the parsed JSON object
+        response: aiResponse,
         relevantContent: searchResults,
         threadId: openAiThreadId,
       })

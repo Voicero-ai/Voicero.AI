@@ -44,25 +44,48 @@ export async function GET(request: NextRequest) {
 
     const formattedSession = {
       id: thread.id,
-      type: "text", // You can add voice/text type to your schema if needed
+      type: "text",
       website: {
         id: thread.website.id,
         domain: thread.website.url,
       },
       startedAt: thread.createdAt.toISOString(),
-      messages: thread.messages.map((msg) => ({
-        id: msg.id,
-        type: msg.role as "user" | "ai",
-        content: msg.content,
-        timestamp: msg.createdAt.toISOString(),
-        metadata:
-          msg.pageUrl || msg.scrollToText
-            ? {
-                url: msg.pageUrl || undefined,
-                scrollToText: msg.scrollToText || undefined,
-              }
+      messages: thread.messages.map((msg) => {
+        let content = msg.content;
+        let metadata = {
+          url: msg.pageUrl || undefined,
+          scrollToText: msg.scrollToText || undefined,
+        };
+
+        // Handle text-based JSON responses
+        try {
+          if (typeof content === "string") {
+            const parsed = JSON.parse(content);
+            content = parsed.content;
+
+            // Update metadata from the JSON response if available
+            if (parsed.redirect_url) {
+              metadata.url = parsed.redirect_url;
+            }
+            if (parsed.scroll_to_text) {
+              metadata.scrollToText = parsed.scroll_to_text;
+            }
+          }
+        } catch (e) {
+          // If parsing fails, use the content as-is
+          console.error("Failed to parse message content:", e);
+        }
+
+        return {
+          id: msg.id,
+          type: msg.role as "user" | "ai",
+          content: content,
+          timestamp: msg.createdAt.toISOString(),
+          metadata: Object.values(metadata).some((v) => v !== undefined)
+            ? metadata
             : undefined,
-      })),
+        };
+      }),
     };
 
     return NextResponse.json(formattedSession);

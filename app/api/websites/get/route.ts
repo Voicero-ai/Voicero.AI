@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 2) Look up the Website record
+    // Fetch website with aiThreads and messages
     const website = await prisma.website.findUnique({
       where: { id: websiteId },
       include: {
@@ -23,6 +23,11 @@ export async function GET(request: NextRequest) {
             createdAt: "desc",
           },
           take: 1,
+        },
+        aiThreads: {
+          include: {
+            messages: true,
+          },
         },
       },
     });
@@ -34,15 +39,71 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Convert "active" boolean to a string "active" | "inactive"
-    const status = website.active ? "active" : "inactive";
-
-    // 3) Prepare some placeholder or computed global stats
-    // In a real app, you might sum up your AiMessage or AiThreads usage, etc.
+    // Calculate global stats and content-specific redirects
     const globalStats = {
-      totalAiRedirects: 0, // e.g. sum from DB if you track it
+      totalAiRedirects: 0,
       totalVoiceChats: 0,
       totalTextChats: 0,
+    };
+
+    // Create a map to track redirects per URL
+    const urlRedirectCounts = new Map<string, number>();
+
+    // Iterate through all threads and their messages
+    website.aiThreads.forEach((thread) => {
+      let hasVoiceMessage = false;
+      let hasTextMessage = false;
+
+      thread.messages.forEach((message) => {
+        // Try to parse content as JSON to check for redirect_url
+        try {
+          const contentJson = JSON.parse(message.content);
+          if (contentJson.redirect_url) {
+            globalStats.totalAiRedirects++;
+            // Get pathname from the full URL, ignoring the domain
+            const url = new URL(contentJson.redirect_url);
+            const normalizedUrl = url.pathname.replace(/\/$/, ""); // Remove trailing slash
+            urlRedirectCounts.set(
+              normalizedUrl,
+              (urlRedirectCounts.get(normalizedUrl) || 0) + 1
+            );
+          }
+        } catch (e) {
+          // If message.pageUrl exists (legacy format), count that
+          if (message.pageUrl) {
+            globalStats.totalAiRedirects++;
+            // Get pathname from the full URL, ignoring the domain
+            const url = new URL(message.pageUrl);
+            const normalizedUrl = url.pathname.replace(/\/$/, ""); // Remove trailing slash
+            urlRedirectCounts.set(
+              normalizedUrl,
+              (urlRedirectCounts.get(normalizedUrl) || 0) + 1
+            );
+          }
+        }
+
+        // Track message types
+        if (message.type === "voice") {
+          hasVoiceMessage = true;
+        }
+        if (message.type === "text") {
+          hasTextMessage = true;
+        }
+      });
+
+      // Add to total counts if thread had respective message types
+      if (hasVoiceMessage) {
+        globalStats.totalVoiceChats++;
+      }
+      if (hasTextMessage) {
+        globalStats.totalTextChats++;
+      }
+    });
+
+    // Helper function to get redirect count for a URL - normalize input URL
+    const getRedirectCount = (url: string) => {
+      const normalizedUrl = url.replace(/\/$/, ""); // Remove trailing slash
+      return urlRedirectCounts.get(normalizedUrl) || 0;
     };
 
     // 4) We'll store all content (products, blogPosts, pages) here
@@ -70,7 +131,7 @@ export async function GET(request: NextRequest) {
         url: `/products/${prod.slug}`,
         type: "product" as const,
         lastUpdated: prod.updatedAt.toISOString(),
-        aiRedirects: 0,
+        aiRedirects: getRedirectCount(`/products/${prod.slug}`),
         description: prod.description,
         price: prod.price,
         regularPrice: prod.regularPrice,
@@ -114,7 +175,7 @@ export async function GET(request: NextRequest) {
         url: `/blog/${post.slug}`,
         type: "post" as const,
         lastUpdated: post.updatedAt.toISOString(),
-        aiRedirects: 0,
+        aiRedirects: getRedirectCount(`/blog/${post.slug}`),
         content: post.excerpt ?? post.content,
         author: post.author?.name ?? "Unknown",
         categories: post.categories.map((c) => ({ id: c.id, name: c.name })),
@@ -148,7 +209,7 @@ export async function GET(request: NextRequest) {
         url: `/${p.slug}`, // or p.link
         type: "page" as const,
         lastUpdated: p.updatedAt.toISOString(),
-        aiRedirects: 0,
+        aiRedirects: getRedirectCount(`/${p.slug}`),
         content: p.content,
       }));
 
@@ -166,7 +227,7 @@ export async function GET(request: NextRequest) {
         url: `/products/${prod.handle}`,
         type: "product" as const,
         lastUpdated: prod.updatedAt.toISOString(),
-        aiRedirects: 0,
+        aiRedirects: getRedirectCount(`/products/${prod.handle}`),
         description: prod.description,
       }));
 
@@ -190,7 +251,7 @@ export async function GET(request: NextRequest) {
         url: `/blogs/${post.handle}`, // or however you form the URL
         type: "post" as const,
         lastUpdated: post.updatedAt.toISOString(),
-        aiRedirects: 0,
+        aiRedirects: getRedirectCount(`/blogs/${post.handle}`),
         content: post.content,
         author: post.author,
       }));
@@ -207,7 +268,7 @@ export async function GET(request: NextRequest) {
         url: `/${p.handle}`,
         type: "page" as const,
         lastUpdated: p.updatedAt.toISOString(),
-        aiRedirects: 0,
+        aiRedirects: getRedirectCount(`/${p.handle}`),
         content: p.content,
       }));
     } else {
@@ -227,17 +288,19 @@ export async function GET(request: NextRequest) {
       type: website.type, // 'WordPress' or 'Shopify'
       plan: website.plan,
       name: website.name,
-      status,
+      status: website.active ? "active" : "inactive",
       monthlyQueries: website.monthlyQueries,
       queryLimit: website.queryLimit,
       lastSync: website.lastSyncedAt?.toISOString() || null,
       accessKey: website.accessKeys[0]?.key || null,
-      // globalStats: can be replaced with real sums if you track them
       globalStats,
       stats: {
-        aiRedirects: 0,
-        totalRedirects: 0,
-        redirectRate: 0,
+        aiRedirects: globalStats.totalAiRedirects,
+        totalRedirects: globalStats.totalAiRedirects,
+        redirectRate:
+          website.monthlyQueries > 0
+            ? (globalStats.totalAiRedirects / website.monthlyQueries) * 100
+            : 0,
       },
       content: {
         products,
