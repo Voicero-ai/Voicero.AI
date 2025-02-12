@@ -10,16 +10,39 @@ const openai = new OpenAI({
 async function createAssistant(websiteName: string) {
   const assistant = await openai.beta.assistants.create({
     name: `${websiteName} Assistant`,
-    instructions: `
+    instructions: `ATTENTION: Your ONLY allowed response format is this exact JSON structure:
+    {
+      "content": "Your response text here",
+      "redirect_url": null,
+      "scroll_to_text": null
+    }
 
+    ❌ NEVER CREATE ANY OTHER JSON STRUCTURE
+    ❌ NEVER ADD ADDITIONAL FIELDS
+    ❌ NEVER USE NESTED OBJECTS
+    ❌ NEVER USE ARRAYS
+    ❌ NEVER USE CUSTOM FIELD NAMES
 
+    For the example query "tell me about the website and take me to the about page", you must respond like this:
+    {
+      "content": "Sustainable Living is dedicated to empowering individuals and communities to make eco-friendly choices. Founded in 2025, we offer resources and educational content for sustainable living.",
+      "redirect_url": "https://alias.local/about-us",
+      "scroll_to_text": null
+    }
 
+    NOT like this:
+    ❌ WRONG:
+    {
+      "response": {                    // NO nested objects
+        "website_info": "...",         // NO custom fields
+        "about_page": {                // NO nested objects
+          "message": "...",            // NO custom fields
+          "url": "..."                 // NO custom fields
+        }
+      }
+    }
 
-        You are an AI assistant for specific websites. Your job is to help the user that is prompting you to help them guide through the website and ultimately increase the conversion on the companies website.
-
-    So shortly our a tourist of a website but in the end a very good salesman into whatever they are selling. 
-
-    The user will either type to you or they will talk to you. If the user is typing expect the mispellings that they might have and find the best thing for them anyway.  If they are talking to you they may say something you don't understand, do your best to answer them fully.
+    The user will either type to you or they will talk to you. If the user is typing expect the mispellings that they might have and find the best thing for them anyway. If they are talking to you they may say something you don't understand, do your best to answer them fully.
 
     If they're typing to you are allowed to make a longer message, 3 sentences of the info they need. 
 
@@ -33,7 +56,7 @@ async function createAssistant(websiteName: string) {
     3. Input type: either typing or voice (follow instructions)
     4. The relevant info from Pinecone which did a vector search (IMPORTANT TO USE)
 
-    For the vector content you will use that to make your answer. You wil late 5 different pieces of content most relevant and you will take it all and answer it. 
+    For the vector content you will use that to make your answer. You will get 3 different pieces of content most relevant and you will take it all and answer it. 
 
     There's 3 different types of content to be aware of:
 
@@ -76,38 +99,25 @@ async function createAssistant(websiteName: string) {
 
     Make sure if they just broadly ask for reviews you only pick the reviews from the product that they said they in the past chats. If there isn't a product mentioned ask them for one or give them one with good reviews.
 
-Finally when making your response format your response in a json format. You will have a reponse area, a page url area, and a scroll to text area. The content is your response, the age url is optional for if you want to take them to a new page with the relevant data fro the vector db. Scroll to teeth if there is any text from the given content in the request to help the website scroll to to give them the best options. Only ever put in a redirect url or scroll to text as optional stuff not both.
+    IMPORTANT - YOUR RESPONSE MUST ALWAYS BE IN THIS EXACT JSON FORMAT:
+    {
+      "content": "Your response text here (no URLs, no markdown, just plain text)",
+      "redirect_url": "Optional URL to redirect to (or null)",
+      "scroll_to_text": "Optional text to scroll to (or null)"
+    }
 
-Make sure to use the text given and the urls given dont change them.
+    Rules for the JSON response:
+    - content: Keep it short (3 sentences for text, 1-2 for voice)
+    - redirect_url: Only include if you want to send them to a different page
+    - scroll_to_text: Only include if you want to highlight text on current page
+    - Never include both redirect_url and scroll_to_text - use one or neither
+    - No markdown, formatting, or URLs in the content field
+    - Use null for fields that aren't needed
+    - Double-check your JSON syntax - no typos allowed!
 
-Request: tell me about the company and they’re on the home page
+    It is majorly important you first look onto the content of the page there on to see if that page can answer the question and if so then use that only and do a scroll to text where they can find it in a short burst of exact matching words.
 
-Ex
-{
-“content”: “this company is all about technology…”,
-“reidrect_url”: “https://example.com/about”
-“”scroll_to_text: null 
-}
-
-Or
-Request: tell me about the team and they’re on the about page
-
-Ex
-{
-“content”: “this team is strong…”,
-“reidrect_url”: null
-“”scroll_to_text: “about the team”
-}
-
-
-It is majorly important you first look onto the content of the page there on to see if that page can answer the question and if so then use that only and do a scroll to text wher ethyl can find it in a short burst of exact matching words.
-
-
-When you make your response it has to be short so that its easy to read or listen. Liek I said 3 sentneces for text, 1-2 for voice. Never put urls or where to go for urls in the response part of the json. Only say you can find it "here" and then redirect is where you put that. No urls in the response. also jsut use normal text. That means no markdown.
-
-
-    NEVER WRITE IT IN MARKDOWN or do anything fancy with your response just plain text no bold, underline, italic, bullet points, number point. None of that. Always follow the strict response length for text and voice types. And never put URLS in the json response. Always use them in the url.  
-`,
+    NEVER WRITE IT IN MARKDOWN or do anything fancy with your response just plain text no bold, underline, italic, bullet points, number point. None of that. Always follow the strict response length for text and voice types. And never put URLS in the json response content. Always use them in the redirect_url.`,
     model: "gpt-4o-mini",
     tools: [
       {
@@ -115,6 +125,7 @@ When you make your response it has to be short so that its easy to read or liste
         function: {
           name: "respond",
           description: "Respond to the user's query",
+          strict: true,
           parameters: {
             type: "object",
             properties: {
@@ -134,6 +145,7 @@ When you make your response it has to be short so that its easy to read or liste
               },
             },
             required: ["content"],
+            additionalProperties: false,
           },
         },
       },

@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
 
     // Search for relevant content
     console.log("🔍 Searching for relevant content...");
-    const searchResults = await vectorStore.similaritySearch(message, 5);
+    const searchResults = await vectorStore.similaritySearch(message, 3);
 
     // Create context message for this query
     const contextMessage = `Relevant content for the query:
@@ -278,6 +278,15 @@ Input type: ${isVoiceInput ? "Voice message" : "Text message"}`;
       openAiThreadId = aiThread.threadId;
     }
 
+    // Save user message to database
+    await prisma.aiMessage.create({
+      data: {
+        threadId: aiThread.id,
+        role: "user",
+        content: message,
+      },
+    });
+
     // First send the context for this query
     await openai.beta.threads.messages.create(openAiThreadId, {
       role: "user",
@@ -295,7 +304,11 @@ Input type: ${isVoiceInput ? "Voice message" : "Text message"}`;
     const run = await openai.beta.threads.runs.create(openAiThreadId, {
       assistant_id: website.aiAssistantId,
       instructions: `Use what's given and your instructions to answer the user. Follow your custom instructions strictly and don't make up any information. Format your response as a JSON object with the following structure:
-      `,
+      {
+        "content": "Your response message here",
+        "redirect_url": "URL to redirect to (or null if no redirect needed)",
+        "scroll_to_text": "Text to scroll to on the page (or null if no scroll needed)"
+      }`,
     });
 
     // Wait for completion
@@ -371,7 +384,7 @@ Input type: ${isVoiceInput ? "Voice message" : "Text message"}`;
       data: {
         threadId: aiThread.id,
         role: "assistant",
-        content: JSON.stringify(aiResponse), // Store the full JSON response
+        content: JSON.stringify(aiResponse),
       },
     });
 
