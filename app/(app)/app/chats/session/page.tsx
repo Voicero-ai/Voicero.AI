@@ -48,7 +48,9 @@ export default function ChatSession() {
 
       try {
         setLoading(true);
-        const response = await fetch(`/api/chats/${sessionId}`);
+        const response = await fetch(
+          `/api/chats/threadId?sessionId=${sessionId}`
+        );
         if (!response.ok) throw new Error("Failed to fetch chat session");
 
         const data = await response.json();
@@ -175,7 +177,7 @@ export default function ChatSession() {
                   {message.metadata.scrollToText && (
                     <div className="flex items-center gap-2 text-sm text-brand-accent">
                       <FaArrowDown className="w-4 h-4" />
-                      Scrolled to "{message.metadata.scrollToText}"
+                      Scrolled to &quot;{message.metadata.scrollToText}&quot;
                     </div>
                   )}
                 </div>

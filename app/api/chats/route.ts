@@ -5,17 +5,18 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
   try {
     const session = await auth();
-    if (!session) {
+    if (!session?.user) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
     const websiteId = searchParams.get("websiteId");
-    const type = searchParams.get("type");
-    const sort = searchParams.get("sort") || "recent";
     const timeRange = searchParams.get("timeRange") || "all";
 
-    let whereClause: any = {
+    const whereClause: {
+      website: { userId: string; id?: string };
+      createdAt?: { gte: Date };
+    } = {
       website: {
         userId: session.user.id,
         ...(websiteId ? { id: websiteId } : {}),

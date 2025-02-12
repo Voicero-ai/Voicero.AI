@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
 import AnimatedComputer from "../../components/AnimatedComputer";
 import Link from "next/link";
 

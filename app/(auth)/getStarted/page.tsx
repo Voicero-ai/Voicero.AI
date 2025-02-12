@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaEnvelope, FaLock, FaUser, FaEye, FaEyeSlash } from "react-icons/fa";
 import Link from "next/link";
@@ -40,6 +40,11 @@ export default function GetStarted() {
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [searchParams, setSearchParams] = useState("");
+
+  useEffect(() => {
+    setSearchParams(window.location.search);
+  }, []);
 
   const validateForm = () => {
     const newErrors: FormErrors = {};
@@ -103,12 +108,10 @@ export default function GetStarted() {
         throw new Error(data.error || "Failed to register");
       }
 
-      // Get callback URL if it exists
-      const searchParams = new URLSearchParams(window.location.search);
-      const callbackUrl = searchParams.get("callbackUrl");
+      const params = new URLSearchParams(searchParams);
+      const callbackUrl = params.get("callbackUrl");
 
       if (callbackUrl) {
-        // If there's a callback URL, sign in automatically and redirect
         const result = await signIn("credentials", {
           login: formData.email,
           password: formData.password,
@@ -121,7 +124,7 @@ export default function GetStarted() {
 
         router.push(callbackUrl);
       } else {
-        setStep(2); // Show success message if no callback
+        setStep(2);
       }
     } catch (error) {
       console.error("Registration error:", error);
@@ -140,7 +143,6 @@ export default function GetStarted() {
       ...prev,
       [name]: value,
     }));
-    // Clear error when user starts typing
     if (errors[name as keyof FormErrors]) {
       setErrors((prev) => ({
         ...prev,
@@ -159,7 +161,6 @@ export default function GetStarted() {
           transition={{ duration: 0.5 }}
           className="max-w-4xl mx-auto"
         >
-          {/* Header */}
           <div className="text-center mb-8">
             <Link href="/">
               <h1
@@ -175,11 +176,9 @@ export default function GetStarted() {
             </p>
           </div>
 
-          {/* Sign Up Form */}
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-brand-lavender-light/20">
             {step === 1 ? (
               <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
-                {/* Company Name Input */}
                 <div>
                   <label className="block text-sm font-medium text-brand-text-secondary mb-2">
                     Company Name
@@ -210,7 +209,6 @@ export default function GetStarted() {
                   </div>
                 </div>
 
-                {/* Username Input */}
                 <div>
                   <label className="block text-sm font-medium text-brand-text-secondary mb-2">
                     Username
@@ -241,7 +239,6 @@ export default function GetStarted() {
                   </div>
                 </div>
 
-                {/* Email Input */}
                 <div>
                   <label className="block text-sm font-medium text-brand-text-secondary mb-2">
                     Email Address
@@ -272,7 +269,6 @@ export default function GetStarted() {
                   </div>
                 </div>
 
-                {/* Password Input */}
                 <div>
                   <label className="block text-sm font-medium text-brand-text-secondary mb-2">
                     Password
@@ -313,7 +309,6 @@ export default function GetStarted() {
                   )}
                 </div>
 
-                {/* Confirm Password Input */}
                 <div>
                   <label className="block text-sm font-medium text-brand-text-secondary mb-2">
                     Confirm Password
@@ -356,7 +351,6 @@ export default function GetStarted() {
                   )}
                 </div>
 
-                {/* Sign Up Button */}
                 <div className="col-span-2 mt-4">
                   <motion.button
                     whileHover={{ scale: 1.02 }}
@@ -399,12 +393,11 @@ export default function GetStarted() {
               </motion.div>
             )}
 
-            {/* Login Link */}
             {step === 1 && (
               <p className="mt-8 text-center text-sm text-brand-text-secondary">
                 Already have an account?{" "}
                 <Link
-                  href={`/login${window.location.search}`}
+                  href={`/login${searchParams}`}
                   className="font-medium text-brand-accent hover:text-brand-accent/80 transition-colors"
                 >
                   Sign in

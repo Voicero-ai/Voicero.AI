@@ -61,8 +61,8 @@ export default function CompleteWebsitePage() {
           Setting Up Your Website
         </h1>
         <p className="text-brand-text-secondary max-w-md mx-auto">
-          We're configuring your website with Voicero.AI. This will only take a
-          moment...
+          We&apos;re configuring your website with Voicero.AI. This will only
+          take a moment...
         </p>
       </div>
     </div>

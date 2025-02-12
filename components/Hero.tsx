@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import AnimatedComputer from "./AnimatedComputer";
 import { FaShopify, FaWordpress } from "react-icons/fa";
 
@@ -18,11 +17,6 @@ export default function Hero() {
     setShowPlatformPopup(false);
   };
 
-  const scrollToDemo = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const demoSection = document.getElementById("demo");
-    demoSection?.scrollIntoView({ behavior: "smooth" });
-  };
 
   return (
     <section className="relative min-h-screen pt-32 overflow-hidden bg-gradient-to-b from-brand-lavender-light/20 via-white to-white">

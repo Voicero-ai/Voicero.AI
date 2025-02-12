@@ -5,13 +5,9 @@ import { motion } from "framer-motion";
 import Navbar from "../../components/Navbar";
 import {
   FaRocket,
-  FaLightbulb,
   FaUsers,
   FaGlobe,
-  FaCode,
   FaHeart,
-  FaAward,
-  FaMedal,
   FaChevronLeft,
   FaChevronRight,
 } from "react-icons/fa";
@@ -77,17 +73,20 @@ const initiatives = [
   {
     title: "E-commerce Success",
     image: "https://source.unsplash.com/random/800x600?ecommerce-success",
-    description: "Built and scaled multiple e-commerce stores to 7-figures through AI-driven optimization.",
+    description:
+      "Built and scaled multiple e-commerce stores to 7-figures through AI-driven optimization.",
   },
   {
     title: "Conversion Mastery",
     image: "https://source.unsplash.com/random/800x600?data-analytics",
-    description: "Developed proven strategies that consistently achieve 3-5x industry average conversion rates.",
+    description:
+      "Developed proven strategies that consistently achieve 3-5x industry average conversion rates.",
   },
   {
     title: "AI Innovation",
     image: "https://source.unsplash.com/random/800x600?artificial-intelligence",
-    description: "Pioneering AI solutions that make enterprise-level optimization accessible to all stores.",
+    description:
+      "Pioneering AI solutions that make enterprise-level optimization accessible to all stores.",
   },
 ];
 
@@ -96,19 +95,22 @@ const testimonials = [
     name: "John Smith",
     role: "CTO at TechCorp",
     image: "https://source.unsplash.com/random/100x100?portrait=5",
-    quote: "Voicero.AI has transformed how we handle customer inquiries. The AI-powered search is simply revolutionary.",
+    quote:
+      "Voicero.AI has transformed how we handle customer inquiries. The AI-powered search is simply revolutionary.",
   },
   {
     name: "Lisa Chen",
     role: "CEO at InnovateCo",
     image: "https://source.unsplash.com/random/100x100?portrait=6",
-    quote: "Implementation was seamless, and the results were immediate. Our conversion rates have increased by 40%.",
+    quote:
+      "Implementation was seamless, and the results were immediate. Our conversion rates have increased by 40%.",
   },
   {
     name: "Mark Johnson",
     role: "Product Lead at StartupX",
     image: "https://source.unsplash.com/random/100x100?portrait=7",
-    quote: "The most intuitive AI search solution we've ever used. It's like having a mind-reading search engine.",
+    quote:
+      "The most intuitive AI search solution we've ever used. It's like having a mind-reading search engine.",
   },
 ];
 
@@ -128,7 +130,9 @@ export default function AboutPage() {
   };
 
   const prevInitiative = () => {
-    setCurrentInitiative((prev) => (prev - 1 + initiatives.length) % initiatives.length);
+    setCurrentInitiative(
+      (prev) => (prev - 1 + initiatives.length) % initiatives.length
+    );
   };
 
   return (
@@ -152,7 +156,15 @@ export default function AboutPage() {
                 with AI
               </h1>
               <p className="text-lg lg:text-xl text-brand-dark/70 mb-8 leading-relaxed">
-                As a founder who's built and scaled multiple 7-figure e-commerce stores, I understand the challenges of achieving exceptional conversion rates. Through years of testing and optimization, I've developed AI-powered solutions that consistently outperform traditional methods by 3-5x. My mission is to make these enterprise-level optimization tools accessible to every e-commerce store owner. Let me help you transform your store's performance with the power of AI-driven conversions.
+                As a founder who&apos;s built and scaled multiple 7-figure
+                e-commerce stores, I understand the challenges of achieving
+                exceptional conversion rates. Through years of testing and
+                optimization, I&apos;ve developed AI-powered solutions that
+                consistently outperform traditional methods by 3-5x. My mission
+                is to make these enterprise-level optimization tools accessible
+                to every e-commerce store owner. Let me help you transform your
+                store&apos;s performance with the power of AI-driven
+                conversions.
               </p>
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -186,10 +198,13 @@ export default function AboutPage() {
               transition={{ duration: 0.8 }}
               className="text-center mb-12 max-w-3xl mx-auto"
             >
-              <h2 className="text-4xl font-bold text-brand-dark mb-4">Our Experience</h2>
+              <h2 className="text-4xl font-bold text-brand-dark mb-4">
+                Our Experience
+              </h2>
               <p className="text-xl text-brand-dark/70">
-                From building successful e-commerce stores to developing cutting-edge AI solutions, 
-                we bring real-world expertise to every client.
+                From building successful e-commerce stores to developing
+                cutting-edge AI solutions, we bring real-world expertise to
+                every client.
               </p>
             </motion.div>
             <div className="relative">
@@ -240,7 +255,9 @@ export default function AboutPage() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-center mb-12"
           >
-            <h2 className="text-4xl font-bold text-brand-dark mb-4">Our Values</h2>
+            <h2 className="text-4xl font-bold text-brand-dark mb-4">
+              Our Values
+            </h2>
             <p className="text-xl text-brand-dark/70">
               The principles that guide our innovation and growth.
             </p>
@@ -257,7 +274,9 @@ export default function AboutPage() {
                 <div className="text-brand-accent mb-4">
                   <value.icon className="w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-bold text-brand-dark mb-2">{value.title}</h3>
+                <h3 className="text-xl font-bold text-brand-dark mb-2">
+                  {value.title}
+                </h3>
                 <p className="text-brand-dark/70">{value.description}</p>
               </motion.div>
             ))}
@@ -281,7 +300,9 @@ export default function AboutPage() {
                   transition={{ duration: 0.8, delay: index * 0.1 }}
                   className="text-center"
                 >
-                  <h3 className="text-4xl font-bold mb-2">{achievement.number}</h3>
+                  <h3 className="text-4xl font-bold mb-2">
+                    {achievement.number}
+                  </h3>
                   <p className="text-white/80">{achievement.label}</p>
                 </motion.div>
               ))}
@@ -297,7 +318,9 @@ export default function AboutPage() {
             transition={{ duration: 0.8 }}
             className="text-center mb-12"
           >
-            <h2 className="text-4xl font-bold text-brand-dark mb-4">What Our Clients Say</h2>
+            <h2 className="text-4xl font-bold text-brand-dark mb-4">
+              What Our Clients Say
+            </h2>
             <p className="text-xl text-brand-dark/70">
               Success stories from businesses using our AI-powered search.
             </p>
@@ -320,11 +343,13 @@ export default function AboutPage() {
                   <h3 className="text-xl font-bold text-brand-dark">
                     {testimonials[currentTestimonial].name}
                   </h3>
-                  <p className="text-brand-accent">{testimonials[currentTestimonial].role}</p>
+                  <p className="text-brand-accent">
+                    {testimonials[currentTestimonial].role}
+                  </p>
                 </div>
               </div>
               <p className="text-xl text-brand-dark/70 italic">
-                "{testimonials[currentTestimonial].quote}"
+                &quot;{testimonials[currentTestimonial].quote}&quot;
               </p>
             </motion.div>
           </div>
@@ -338,7 +363,9 @@ export default function AboutPage() {
             transition={{ duration: 0.8 }}
             className="text-center mb-12"
           >
-            <h2 className="text-4xl font-bold text-brand-dark mb-4">Our Team</h2>
+            <h2 className="text-4xl font-bold text-brand-dark mb-4">
+              Our Team
+            </h2>
             <p className="text-xl text-brand-dark/70">
               Meet the innovators behind our success.
             </p>
@@ -361,7 +388,9 @@ export default function AboutPage() {
                     className="w-full aspect-square object-cover"
                   />
                 </div>
-                <h3 className="text-xl font-bold text-brand-dark mb-1">{member.name}</h3>
+                <h3 className="text-xl font-bold text-brand-dark mb-1">
+                  {member.name}
+                </h3>
                 <p className="text-brand-accent mb-2">{member.role}</p>
                 <p className="text-brand-dark/70">{member.bio}</p>
               </motion.div>
@@ -381,12 +410,13 @@ export default function AboutPage() {
               Ready to Transform Your Search Experience?
             </h2>
             <p className="text-xl text-brand-dark/70 mb-8">
-              Join thousands of businesses already using our AI-powered solutions.
+              Join thousands of businesses already using our AI-powered
+              solutions.
             </p>
             <motion.button
-              whileHover={{ 
+              whileHover={{
                 scale: 1.02,
-                boxShadow: "0 10px 30px -10px rgba(126, 58, 242, 0.4)"
+                boxShadow: "0 10px 30px -10px rgba(126, 58, 242, 0.4)",
               }}
               whileTap={{ scale: 0.98 }}
               className="bg-gradient-to-r from-brand-accent to-[#9F5EF0] text-white rounded-xl text-lg px-8 py-4 font-medium"
@@ -398,4 +428,4 @@ export default function AboutPage() {
       </main>
     </>
   );
-} 
+}

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { cors } from "@/lib/cors";
-import { OpenAI } from "openai";
 
 const prisma = new PrismaClient();
-const openai = new OpenAI();
 
 export async function OPTIONS(request: NextRequest) {
   const response = new NextResponse(null, { status: 204 });

@@ -1,20 +1,24 @@
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { NextResponse } from "next/server";
 
-export async function GET(
-  req: Request,
-  { params }: { params: { threadId: string } }
-) {
+export async function GET(request: NextRequest) {
   try {
     const session = await auth();
-    if (!session) {
+    if (!session?.user) {
       return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const searchParams = request.nextUrl.searchParams;
+    const threadId = searchParams.get("sessionId");
+
+    if (!threadId) {
+      return new NextResponse("Thread ID is required", { status: 400 });
     }
 
     const thread = await prisma.aiThread.findUnique({
       where: {
-        id: params.threadId,
+        id: threadId,
         website: {
           userId: session.user.id,
         },

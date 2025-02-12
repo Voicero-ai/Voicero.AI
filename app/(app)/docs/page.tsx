@@ -74,7 +74,7 @@ export default function Docs() {
             </h3>
             <p className="text-brand-text-secondary">
               Preview the chat widget on your site, test interactions, and go
-              live when you're ready!
+              live when you&apos;re ready!
             </p>
           </div>
         </div>

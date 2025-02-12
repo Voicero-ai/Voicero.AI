@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import prisma from "@/lib/prisma";
-import crypto from "crypto";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -45,6 +44,8 @@ export async function GET(request: Request) {
       monthlyQueries: 0,
     },
   });
+
+  
 
   return NextResponse.redirect(
     `${process.env.NEXT_PUBLIC_APP_URL}/app/websites`

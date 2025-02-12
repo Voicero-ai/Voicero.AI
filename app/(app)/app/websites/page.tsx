@@ -4,9 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   FaGlobe,
-  FaChartBar,
   FaExternalLinkAlt,
-  FaCog,
   FaShoppingBag,
   FaNewspaper,
   FaFile,
@@ -36,7 +34,6 @@ interface Website {
 export default function Websites() {
   const [websites, setWebsites] = useState<Website[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedWebsite, setSelectedWebsite] = useState<Website | null>(null);
   const router = useRouter();
 
   useEffect(() => {

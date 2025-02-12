@@ -10,7 +10,6 @@ import {
   FaShoppingBag,
   FaUser,
   FaPlus,
-  FaTimes
 } from "react-icons/fa";
 
 const appleContent = {

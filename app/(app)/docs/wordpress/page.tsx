@@ -100,7 +100,7 @@ export default function WordPressGuide() {
                   <FaDownload className="w-4 h-4" />
                 </a>
                 <span className="text-sm text-brand-text-secondary">
-                  or search for "Voicero.AI" in WordPress plugins
+                  or search for &quot;Voicero.AI&quot; in WordPress plugins
                 </span>
               </div>
             </div>
@@ -122,11 +122,11 @@ export default function WordPressGuide() {
                   After activation, follow these steps in your WordPress admin:
                 </p>
                 <ol className="space-y-3 text-brand-text-secondary list-decimal list-inside ml-4">
-                  <li>Find "Voicero.AI" in the sidebar menu</li>
+                  <li>Find &quot;Voicero.AI&quot; in the sidebar menu</li>
                   <li>Enter your access key in the settings</li>
-                  <li>Click "Verify" to validate your key</li>
-                  <li>Click "Sync Website Data" to initialize AI features</li>
-                  <li>Click "Add to Website" to enable the chat widget</li>
+                  <li>Click &quot;Verify&quot; to validate your key</li>
+                  <li>Click &quot;Sync Website Data&quot; to initialize AI features</li>
+                  <li>Click &quot;Add to Website&quot; to enable the chat widget</li>
                 </ol>
               </div>
             </div>
@@ -141,7 +141,7 @@ export default function WordPressGuide() {
             </div>
             <div className="space-y-3">
               <h2 className="text-xl font-semibold text-brand-text-primary">
-                4. You're All Set!
+                4. You&apos;re All Set!
               </h2>
               <p className="text-brand-text-secondary">
                 Visit your website to see the AI chat widget in action. You can

@@ -403,44 +403,4 @@ export default function Chats() {
   );
 }
 
-// Separate component for chat preview
-function ChatPreview({ chat }: { chat: Chat }) {
-  return (
-    <div className="space-y-4">
-      {/* Query */}
-      <div className="flex items-start gap-4">
-        <div className="p-2 bg-brand-lavender-light/10 rounded-lg">
-          {chat.type === "voice" ? (
-            <FaVolumeUp className="w-5 h-5 text-brand-accent" />
-          ) : (
-            <FaKeyboard className="w-5 h-5 text-brand-accent" />
-          )}
-        </div>
-        <div>
-          <p className="text-brand-text-primary font-medium mb-1">
-            {chat.query}
-          </p>
-          <p className="text-sm text-brand-text-secondary">
-            {new Date(chat.timestamp).toLocaleString()}
-          </p>
-        </div>
-      </div>
 
-      {/* Response Preview */}
-      <div className="ml-12 p-4 bg-brand-lavender-light/5 rounded-xl">
-        <p className="text-brand-text-primary">{chat.response.content}</p>
-        <div className="mt-2 text-sm">
-          {chat.response.type === "redirect" && (
-            <span className="text-brand-accent">Redirected to page</span>
-          )}
-          {chat.response.type === "scroll" && (
-            <span className="text-brand-accent">Scrolled to element</span>
-          )}
-          {chat.response.type === "answer" && (
-            <span className="text-brand-accent">Provided JSON response</span>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}

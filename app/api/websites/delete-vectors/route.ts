@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { Pinecone } from "@pinecone-database/pinecone";
 

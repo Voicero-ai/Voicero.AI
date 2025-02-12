@@ -95,7 +95,6 @@ interface SetupInstructions {
 }
 
 export default function WebsiteSettings() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const websiteId = searchParams.get("id");
 
@@ -309,12 +308,8 @@ export default function WebsiteSettings() {
     name,
     monthlyQueries,
     queryLimit,
-    lastSync,
-    accessKey,
     globalStats,
-    stats,
     content,
-    stripeId,
   } = websiteData;
 
   // For convenience in the tab content
@@ -630,7 +625,7 @@ export default function WebsiteSettings() {
                        text-brand-accent rounded-lg text-center 
                        hover:bg-brand-accent/5 transition-colors"
             >
-              I'll do this later
+              I&apos;ll do this later
             </button>
           </div>
         </div>

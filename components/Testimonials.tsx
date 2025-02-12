@@ -9,19 +9,22 @@ const testimonials = [
     name: "Sarah Johnson",
     role: "CTO at TechCorp",
     image: "/testimonials/avatar1.jpg",
-    quote: "This platform has revolutionized how we handle our data. The insights we've gained are invaluable.",
+    quote:
+      "This platform has revolutionized how we handle our data. The insights we've gained are invaluable.",
   },
   {
     name: "Michael Chen",
     role: "Product Manager at InnovateCo",
     image: "/testimonials/avatar2.jpg",
-    quote: "The ease of use and powerful features make this a must-have tool for any serious business.",
+    quote:
+      "The ease of use and powerful features make this a must-have tool for any serious business.",
   },
   {
     name: "Emily Rodriguez",
     role: "Data Scientist at DataFlow",
     image: "/testimonials/avatar3.jpg",
-    quote: "I'm impressed by the accuracy and speed of the analytics. It's become an essential part of our workflow.",
+    quote:
+      "I'm impressed by the accuracy and speed of the analytics. It's become an essential part of our workflow.",
   },
 ];
 
@@ -32,18 +35,18 @@ export default function Testimonials() {
   const slideVariants = {
     enter: (direction: number) => ({
       x: direction > 0 ? 1000 : -1000,
-      opacity: 0
+      opacity: 0,
     }),
     center: {
       zIndex: 1,
       x: 0,
-      opacity: 1
+      opacity: 1,
     },
     exit: (direction: number) => ({
       zIndex: 0,
       x: direction < 0 ? 1000 : -1000,
-      opacity: 0
-    })
+      opacity: 0,
+    }),
   };
 
   const swipeConfidenceThreshold = 10000;
@@ -51,17 +54,20 @@ export default function Testimonials() {
     return Math.abs(offset) * velocity;
   };
 
-  const paginate = (newDirection: number) => {
+  const paginate = React.useCallback((newDirection: number) => {
     setDirection(newDirection);
-    setCurrent((current + newDirection + testimonials.length) % testimonials.length);
-  };
+    setCurrent(
+      (prev) =>
+        (prev + newDirection + testimonials.length) % testimonials.length
+    );
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
       paginate(1);
     }, 5000);
     return () => clearInterval(timer);
-  }, [current]);
+  }, [paginate]);
 
   return (
     <section className="py-20 bg-gradient-to-b from-brand-lavender-light/20 to-white">
@@ -91,7 +97,7 @@ export default function Testimonials() {
               exit="exit"
               transition={{
                 x: { type: "spring", stiffness: 300, damping: 30 },
-                opacity: { duration: 0.2 }
+                opacity: { duration: 0.2 },
               }}
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
@@ -117,12 +123,14 @@ export default function Testimonials() {
                     />
                   </div>
                   <p className="text-xl text-brand-dark/90 mb-6 italic">
-                    "{testimonials[current].quote}"
+                    &quot;{testimonials[current].quote}&quot;
                   </p>
                   <h3 className="text-lg font-bold text-brand-dark">
                     {testimonials[current].name}
                   </h3>
-                  <p className="text-brand-dark/70">{testimonials[current].role}</p>
+                  <p className="text-brand-dark/70">
+                    {testimonials[current].role}
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -146,4 +154,4 @@ export default function Testimonials() {
       </div>
     </section>
   );
-} 
+}

@@ -1,14 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import prisma from "@/lib/prisma";
-import { authOptions } from "../../auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { z } from "zod";
-import Stripe from "stripe";
-import crypto from "crypto";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-01-27.acacia" as const,
-});
 
 const createWebsiteSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),

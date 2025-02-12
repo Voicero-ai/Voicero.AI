@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
@@ -25,6 +25,64 @@ export default function ConnectPage() {
   const siteUrl = searchParams.get("site_url");
   const wpRedirect = searchParams.get("redirect_url");
 
+  const connectWebsite = useCallback(
+    async (
+      websiteId?: string,
+      savedSiteUrl?: string,
+      savedWpRedirect?: string
+    ) => {
+      try {
+        let connectionData = {
+          siteUrl: savedSiteUrl || siteUrl,
+          wpRedirect: savedWpRedirect || wpRedirect,
+        };
+
+        // If no params provided, try to get from sessionStorage
+        if (!connectionData.siteUrl || !connectionData.wpRedirect) {
+          const storedParams = sessionStorage.getItem("connectionParams");
+          if (storedParams) {
+            const params = JSON.parse(storedParams);
+            connectionData = {
+              siteUrl: params.site_url,
+              wpRedirect: params.redirect_url,
+            };
+          }
+        }
+
+        // Validate required parameters
+        if (!connectionData.siteUrl || !connectionData.wpRedirect) {
+          setError("Missing required connection parameters");
+          return;
+        }
+
+        const response = await fetch("/api/connect-website", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            siteUrl: connectionData.siteUrl,
+            wpRedirect: connectionData.wpRedirect,
+            websiteId: websiteId, // Optional existing website ID
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to connect website");
+        }
+
+        // Clear stored parameters
+        sessionStorage.removeItem("connectionParams");
+
+        // Redirect back to WordPress with the access key
+        window.location.href = data.redirectUrl;
+      } catch (err: any) {
+        setError(err?.message || "An unknown error occurred");
+      }
+    },
+    [siteUrl, wpRedirect]
+  );
+
   useEffect(() => {
     if (status === "loading") return;
 
@@ -40,14 +98,12 @@ export default function ConnectPage() {
     }
 
     if (!session) {
-      // Preserve the original URL parameters in the callback
       const currentUrl = new URL(window.location.href);
       const callbackUrl = `/app/connect${currentUrl.search}`;
       router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       return;
     }
 
-    // Get all websites and filter WordPress ones
     const fetchWebsites = async () => {
       try {
         const response = await fetch("/api/websites");
@@ -85,62 +141,7 @@ export default function ConnectPage() {
     };
 
     fetchWebsites();
-  }, [session, status, siteUrl, wpRedirect, router]);
-
-  const connectWebsite = async (
-    websiteId?: string,
-    savedSiteUrl?: string,
-    savedWpRedirect?: string
-  ) => {
-    try {
-      let connectionData = {
-        siteUrl: savedSiteUrl || siteUrl,
-        wpRedirect: savedWpRedirect || wpRedirect,
-      };
-
-      // If no params provided, try to get from sessionStorage
-      if (!connectionData.siteUrl || !connectionData.wpRedirect) {
-        const storedParams = sessionStorage.getItem("connectionParams");
-        if (storedParams) {
-          const params = JSON.parse(storedParams);
-          connectionData = {
-            siteUrl: params.site_url,
-            wpRedirect: params.redirect_url,
-          };
-        }
-      }
-
-      // Validate required parameters
-      if (!connectionData.siteUrl || !connectionData.wpRedirect) {
-        setError("Missing required connection parameters");
-        return;
-      }
-
-      const response = await fetch("/api/connect-website", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          siteUrl: connectionData.siteUrl,
-          wpRedirect: connectionData.wpRedirect,
-          websiteId: websiteId, // Optional existing website ID
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to connect website");
-      }
-
-      // Clear stored parameters
-      sessionStorage.removeItem("connectionParams");
-
-      // Redirect back to WordPress with the access key
-      window.location.href = data.redirectUrl;
-    } catch (err: any) {
-      setError(err?.message || "An unknown error occurred");
-    }
-  };
+  }, [session, status, siteUrl, wpRedirect, router, connectWebsite]);
 
   if (!session && status !== "loading") {
     return (

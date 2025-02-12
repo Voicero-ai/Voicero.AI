@@ -59,7 +59,8 @@ export default function ForgotPassword() {
                   Check your email
                 </h2>
                 <p className="text-brand-text-secondary mb-6">
-                  We've sent password reset instructions to your email address.
+                  We&apos;ve sent password reset instructions to your email
+                  address.
                 </p>
                 <Link
                   href="/login"

@@ -314,7 +314,7 @@ export default function AccessKeys() {
                       </motion.button>
                     </div>
                     <p className="mt-2 text-sm text-red-500">
-                      Copy this key now! You won't be able to see it again.
+                      Copy this key now! You won&apos;t be able to see it again.
                     </p>
                   </div>
 

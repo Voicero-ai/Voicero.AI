@@ -57,8 +57,8 @@ export default function ShopifyGuide() {
                 1. Get Your Access Key
               </h2>
               <p className="text-brand-text-secondary">
-                Generate an access key from your dashboard. You'll need this to
-                connect your Shopify store to our AI services.
+                Generate an access key from your dashboard. You&apos;ll need this
+                to connect your Shopify store to our AI services.
               </p>
               <div className="flex items-center gap-4">
                 <Link
@@ -119,12 +119,12 @@ export default function ShopifyGuide() {
                   After installation, follow these steps in your Shopify admin:
                 </p>
                 <ol className="space-y-3 text-brand-text-secondary list-decimal list-inside ml-4">
-                  <li>Find "Voicero.AI" in your Apps section</li>
+                  <li>Find &quot;Voicero.AI&quot; in your Apps section</li>
                   <li>Go to the Settings area</li>
                   <li>Enter your access key</li>
-                  <li>Click "Activate Key" to validate</li>
+                  <li>Click &quot;Activate Key&quot; to validate</li>
                   <li>Return to the main app page</li>
-                  <li>Click "Sync Data" to initialize AI features</li>
+                  <li>Click &quot;Sync Data&quot; to initialize AI features</li>
                 </ol>
               </div>
             </div>
@@ -147,7 +147,7 @@ export default function ShopifyGuide() {
                 </p>
                 <ol className="space-y-3 text-brand-text-secondary list-decimal list-inside ml-4">
                   <li>Go to Online Store → Themes</li>
-                  <li>Click "Customize" on your active theme</li>
+                  <li>Click &quot;Customize&quot; on your active theme</li>
                   <li>
                     Click the App Embed icon{" "}
                     <span className="inline-flex items-center justify-center w-5 h-5 bg-gray-100 rounded-sm mx-1">
@@ -155,7 +155,7 @@ export default function ShopifyGuide() {
                     </span>{" "}
                     on the left
                   </li>
-                  <li>Find "Voicero.AI" in the list</li>
+                  <li>Find &quot;Voicero.AI&quot; in the list</li>
                   <li>Toggle it on and save changes</li>
                 </ol>
               </div>
@@ -171,7 +171,7 @@ export default function ShopifyGuide() {
             </div>
             <div className="space-y-3">
               <h2 className="text-xl font-semibold text-brand-text-primary">
-                5. You're All Set!
+                5. You&apos;re All Set!
               </h2>
               <p className="text-brand-text-secondary">
                 Visit your store to see the AI chat widget in action. You can

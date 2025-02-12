@@ -19,18 +19,6 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "@/contexts/UserContext";
 
-interface UserData {
-  id: string;
-  name: string;
-  username: string;
-  profilePicture: string | null;
-  email: string;
-}
-
-interface SidebarProps {
-  userData: UserData | null;
-  loading: boolean;
-}
 
 const menuItems = [
   { name: "Dashboard", icon: FaChartBar, path: "/app" },

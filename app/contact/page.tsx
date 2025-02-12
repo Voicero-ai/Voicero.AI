@@ -41,7 +41,7 @@ export default function Contact() {
               Get in Touch
             </h1>
             <p className="text-lg text-brand-text-secondary text-center mb-12">
-              Ready to transform your website with AI-powered voice navigation? We'd love to hear from you.
+              Ready to transform your website with AI-powered voice navigation? We&apos;d love to hear from you.
             </p>
 
             <div className="grid md:grid-cols-3 gap-8 mb-12">

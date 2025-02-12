@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import Link from "next/link";
@@ -23,6 +23,11 @@ export default function Login() {
     password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [searchParams, setSearchParams] = useState("");
+
+  useEffect(() => {
+    setSearchParams(window.location.search);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,8 +35,8 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const searchParams = new URLSearchParams(window.location.search);
-      const callbackUrl = searchParams.get("callbackUrl");
+      const params = new URLSearchParams(searchParams);
+      const callbackUrl = params.get("callbackUrl");
 
       const result = await signIn("credentials", {
         login: formData.login,
@@ -175,9 +180,9 @@ export default function Login() {
 
             {/* Sign Up Link */}
             <p className="mt-8 text-center text-sm text-brand-text-secondary">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link
-                href={`/getStarted${window.location.search}`}
+                href={`/getStarted${searchParams}`}
                 className="font-medium text-brand-accent hover:text-brand-accent/80 transition-colors"
               >
                 Create one
