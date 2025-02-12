@@ -38,6 +38,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/logo.png" />
+      </head>
       <body className="bg-white text-brand-text-primary font-sans antialiased">
         {children}
       </body>
