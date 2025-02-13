@@ -55,8 +55,8 @@ export default function Hero() {
                 <span className="text-4xl lg:text-5xl font-medium">Costs</span>
               </div>
             </h1>
-            <p className="text-xl text-brand-dark/70 mb-8 leading-relaxed">
-              Transform your e-commerce store with our cutting-edge AI that predicts and adapts to customer behavior in real-time. Our intelligent system learns from every interaction, automatically optimizing your product placement, search results, and recommendations to maximize conversions. With proven results of increasing conversion rates by up to 300%, our AI-powered platform seamlessly integrates with your existing store while continuously evolving to stay ahead of customer trends.
+            <p className="text-xl lg:text-2xl text-brand-dark/70 mb-8 leading-relaxed max-w-3xl">
+              Transform your e-commerce store with our cutting-edge AI that predicts and adapts to customer behavior in real-time.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <motion.button
