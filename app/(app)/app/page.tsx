@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   FaShopify,
@@ -22,37 +22,79 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { format } from "date-fns";
 
-const mockChartData = [
-  { date: "Jan 1", redirects: 240, chats: 150 },
-  { date: "Jan 2", redirects: 300, chats: 180 },
-  { date: "Jan 3", redirects: 280, chats: 190 },
-  { date: "Jan 4", redirects: 320, chats: 200 },
-  { date: "Jan 5", redirects: 350, chats: 220 },
-  { date: "Jan 7", redirects: 380, chats: 250 },
-  { date: "Jan 8", redirects: 400, chats: 280 },
-];
-
-const mockWebsites = [
-  {
-    id: "1",
-    domain: "mystore.shopify.com",
-    platform: "shopify",
-    monthlyChats: 1234,
-    aiRedirects: 567,
-    status: "active",
-  },
-  {
-    id: "2",
-    domain: "blog.wordpress.com",
-    platform: "wordpress",
-    monthlyChats: 890,
-    aiRedirects: 345,
-    status: "active",
-  },
-];
+interface DashboardData {
+  stats: {
+    totalChats: number;
+    voiceChats: number;
+    aiRedirects: number;
+    activeSites: number;
+  };
+  chartData: {
+    date: string;
+    redirects: number;
+    chats: number;
+  }[];
+  websites: {
+    id: string;
+    domain: string;
+    platform: string;
+    monthlyChats: number;
+    aiRedirects: number;
+    status: string;
+  }[];
+}
 
 export default function Dashboard() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const { status } = useSession({
+    required: true,
+    onUnauthenticated() {
+      router.push("/login");
+    },
+  });
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const response = await fetch("/api/dashboard");
+        if (response.status === 401) {
+          router.push("/login");
+          return;
+        }
+        if (!response.ok) throw new Error("Failed to fetch dashboard data");
+        const dashboardData = await response.json();
+        setData(dashboardData);
+        console.log(dashboardData);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (status === "authenticated") {
+      fetchDashboardData();
+    }
+  }, [status, router]);
+
+  if (status === "loading" || loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        Loading...
+      </div>
+    );
+  }
+
+  if (!data) {
+    return <div>Error loading dashboard data</div>;
+  }
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       {/* Quick Stats */}
@@ -66,8 +108,9 @@ export default function Dashboard() {
               Total Chats
             </h3>
           </div>
-          <p className="text-3xl font-bold text-brand-text-primary">2,124</p>
-          <p className="text-sm text-green-600 mt-1">↑ 12% from last month</p>
+          <p className="text-3xl font-bold text-brand-text-primary">
+            {data.stats.totalChats}
+          </p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-brand-lavender-light/20 p-6">
@@ -79,8 +122,9 @@ export default function Dashboard() {
               Voice Chats
             </h3>
           </div>
-          <p className="text-3xl font-bold text-brand-text-primary">912</p>
-          <p className="text-sm text-green-600 mt-1">↑ 18% from last month</p>
+          <p className="text-3xl font-bold text-brand-text-primary">
+            {data.stats.voiceChats}
+          </p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-brand-lavender-light/20 p-6">
@@ -92,8 +136,9 @@ export default function Dashboard() {
               AI Redirects
             </h3>
           </div>
-          <p className="text-3xl font-bold text-brand-text-primary">912</p>
-          <p className="text-sm text-green-600 mt-1">↑ 8% from last month</p>
+          <p className="text-3xl font-bold text-brand-text-primary">
+            {data.stats.aiRedirects}
+          </p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-brand-lavender-light/20 p-6">
@@ -105,7 +150,9 @@ export default function Dashboard() {
               Active Sites
             </h3>
           </div>
-          <p className="text-3xl font-bold text-brand-text-primary">2</p>
+          <p className="text-3xl font-bold text-brand-text-primary">
+            {data.stats.activeSites}
+          </p>
           <p className="text-sm text-brand-text-secondary mt-1">
             Shopify & WordPress
           </p>
@@ -128,21 +175,44 @@ export default function Dashboard() {
           </div>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={mockChartData}>
-                <XAxis dataKey="date" stroke="#94a3b8" />
+              <LineChart
+                data={data.chartData.map((item) => ({
+                  ...item,
+                  date: format(new Date(item.date), "MMM d, yyyy"),
+                }))}
+              >
+                <XAxis
+                  dataKey="date"
+                  stroke="#94a3b8"
+                  tickFormatter={(value) => format(new Date(value), "MMM d")}
+                />
                 <YAxis stroke="#94a3b8" />
-                <Tooltip />
+                <Tooltip
+                  labelFormatter={(label) =>
+                    format(new Date(label), "MMM d, yyyy")
+                  }
+                  contentStyle={{
+                    backgroundColor: "white",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "8px",
+                    padding: "8px",
+                  }}
+                />
                 <Line
                   type="monotone"
                   dataKey="redirects"
                   stroke="#6366f1"
                   strokeWidth={2}
+                  dot={{ r: 4 }}
+                  connectNulls
                 />
                 <Line
                   type="monotone"
                   dataKey="chats"
                   stroke="#a855f7"
                   strokeWidth={2}
+                  dot={{ r: 4 }}
+                  connectNulls
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -215,7 +285,7 @@ export default function Dashboard() {
               Connected Sites
             </h2>
             <div className="space-y-4">
-              {mockWebsites.map((site) => (
+              {data.websites.map((site) => (
                 <Link
                   key={site.id}
                   href={`/app/websites/${site.id}`}
