@@ -37,11 +37,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/logo.png" />
       </head>
-      <body className="bg-white text-brand-text-primary font-sans antialiased">
+      <body className="bg-white text-brand-text-primary font-sans antialiased" suppressHydrationWarning>
         {children}
       </body>
     </html>

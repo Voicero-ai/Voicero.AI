@@ -184,16 +184,16 @@ export default function Hero() {
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 mt-12">
               <div className="text-center">
-                <h3 className="text-3xl font-bold text-brand-accent mb-2">98%</h3>
-                <p className="text-brand-dark/70">Customer Satisfaction</p>
+                <h3 className="text-3xl font-bold text-brand-accent mb-2">45%</h3>
+                <p className="text-brand-dark/70">Average Conversion Increase</p>
               </div>
               <div className="text-center">
-                <h3 className="text-3xl font-bold text-brand-accent mb-2">24/7</h3>
-                <p className="text-brand-dark/70">Support Available</p>
+                <h3 className="text-3xl font-bold text-brand-accent mb-2">0.8s</h3>
+                <p className="text-brand-dark/70">Search Response Time</p>
               </div>
               <div className="text-center sm:col-span-1 col-span-2">
-                <h3 className="text-3xl font-bold text-brand-accent mb-2">100K+</h3>
-                <p className="text-brand-dark/70">Active Users</p>
+                <h3 className="text-3xl font-bold text-brand-accent mb-2">95%</h3>
+                <p className="text-brand-dark/70">Customer Satisfaction</p>
               </div>
             </div>
           </motion.div>

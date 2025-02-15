@@ -1,52 +1,95 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
-import Image from "next/image";
+import { FaShopify, FaWordpress, FaWix, FaSquarespace } from "react-icons/fa";
+import { SiWebflow, SiSquare, SiGhost, SiWoocommerce } from "react-icons/si";
 
-const logos = [
-  "/logos/logo1.svg",
-  "/logos/logo2.svg",
-  "/logos/logo3.svg",
-  "/logos/logo4.svg",
-  "/logos/logo5.svg",
-  "/logos/logo6.svg",
+const webBuilders = [
+  {
+    name: "Shopify",
+    icon: FaShopify,
+    color: "#95BF47"
+  },
+  {
+    name: "WordPress",
+    icon: FaWordpress,
+    color: "#21759B"
+  },
+  {
+    name: "Wix",
+    icon: FaWix,
+    color: "#000000"
+  },
+  {
+    name: "Squarespace",
+    icon: FaSquarespace,
+    color: "#000000"
+  },
+  {
+    name: "Webflow",
+    icon: SiWebflow,
+    color: "#4353FF"
+  },
+  {
+    name: "Square",
+    icon: SiSquare,
+    color: "#3E4348"
+  },
+  {
+    name: "Ghost",
+    icon: SiGhost,
+    color: "#738A94"
+  },
+  {
+    name: "WooCommerce",
+    icon: SiWoocommerce,
+    color: "#96588A"
+  }
 ];
 
 export default function ScrollingLogos() {
   return (
     <div className="w-full py-10 overflow-hidden bg-white">
+      <style jsx>{`
+        @keyframes scroll {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+        .scroll-container {
+          display: flex;
+          width: fit-content;
+          animation: scroll 30s linear infinite;
+        }
+        .scroll-container:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
       <div className="relative">
-        <div className="flex space-x-16">
-          <motion.div
-            className="flex space-x-16"
-            animate={{
-              x: [0, -1035],
-            }}
-            transition={{
-              x: {
-                repeat: Infinity,
-                repeatType: "loop",
-                duration: 20,
-                ease: "linear",
-              },
-            }}
-          >
-            {[...logos, ...logos].map((logo, index) => (
+        <div className="scroll-container">
+          {[...webBuilders, ...webBuilders].map((builder, index) => {
+            const Icon = builder.icon;
+            return (
               <div
                 key={index}
-                className="flex items-center justify-center min-w-[150px] h-16 grayscale hover:grayscale-0 transition-all duration-200"
+                className="flex flex-col items-center justify-center min-w-[150px] h-24 transition-all duration-200 hover:scale-110 gap-2 px-8"
               >
-                <Image
-                  src={logo}
-                  alt={`Partner logo ${index + 1}`}
-                  width={120}
-                  height={60}
-                  className="object-contain"
+                <Icon 
+                  style={{ color: builder.color }} 
+                  className="w-10 h-10 transition-transform hover:scale-110" 
                 />
+                <span 
+                  style={{ color: builder.color }}
+                  className="text-sm font-medium whitespace-nowrap"
+                >
+                  {builder.name}
+                </span>
               </div>
-            ))}
-          </motion.div>
+            );
+          })}
         </div>
       </div>
     </div>
