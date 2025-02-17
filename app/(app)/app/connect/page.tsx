@@ -24,6 +24,7 @@ export default function ConnectPage() {
 
   const siteUrl = searchParams.get("site_url");
   const wpRedirect = searchParams.get("redirect_url");
+  const siteType = searchParams.get("type") || "WordPress";
 
   const connectWebsite = useCallback(
     async (
@@ -35,6 +36,7 @@ export default function ConnectPage() {
         let connectionData = {
           siteUrl: savedSiteUrl || siteUrl,
           wpRedirect: savedWpRedirect || wpRedirect,
+          type: siteType,
         };
 
         // If no params provided, try to get from sessionStorage
@@ -45,6 +47,7 @@ export default function ConnectPage() {
             connectionData = {
               siteUrl: params.site_url,
               wpRedirect: params.redirect_url,
+              type: params.type,
             };
           }
         }
@@ -61,7 +64,8 @@ export default function ConnectPage() {
           body: JSON.stringify({
             siteUrl: connectionData.siteUrl,
             wpRedirect: connectionData.wpRedirect,
-            websiteId: websiteId, // Optional existing website ID
+            websiteId: websiteId,
+            type: connectionData.type,
           }),
         });
 
@@ -80,7 +84,7 @@ export default function ConnectPage() {
         setError(err?.message || "An unknown error occurred");
       }
     },
-    [siteUrl, wpRedirect]
+    [siteUrl, wpRedirect, siteType]
   );
 
   useEffect(() => {
@@ -93,6 +97,7 @@ export default function ConnectPage() {
         JSON.stringify({
           site_url: siteUrl,
           redirect_url: wpRedirect,
+          type: siteType,
         })
       );
     }
@@ -113,13 +118,14 @@ export default function ConnectPage() {
           throw new Error(data.error || "Failed to fetch websites");
         }
 
-        const wordpressWebsites = data.filter(
-          (website: Website) => website.type === "WordPress"
+        // Filter websites based on the type from URL
+        const filteredWebsites = data.filter(
+          (website: Website) => website.type === siteType
         );
-        setWebsites(wordpressWebsites);
+        setWebsites(filteredWebsites);
 
-        // If there's only one WordPress site or none, proceed with connection
-        if (wordpressWebsites.length <= 1) {
+        // If there's only one site of this type or none, proceed with connection
+        if (filteredWebsites.length <= 1) {
           // Get stored params if current URL doesn't have them
           const storedParams = sessionStorage.getItem("connectionParams");
           if (!siteUrl && !wpRedirect && storedParams) {
@@ -141,7 +147,7 @@ export default function ConnectPage() {
     };
 
     fetchWebsites();
-  }, [session, status, siteUrl, wpRedirect, router, connectWebsite]);
+  }, [session, status, siteUrl, wpRedirect, siteType, router, connectWebsite]);
 
   if (!session && status !== "loading") {
     return (

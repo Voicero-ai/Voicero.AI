@@ -200,7 +200,7 @@ export default function Hero() {
                       Choose Your Platform
                     </h2>
                     <p className="text-brand-dark/70 text-center mb-8 max-w-2xl mx-auto">
-                      Select your preferred platform to integrate Voicero's voice navigation capabilities
+                      Select your preferred platform to integrate Voicero&apos;s voice navigation capabilities
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       {platforms.map((platform) => (

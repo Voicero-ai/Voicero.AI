@@ -12,9 +12,10 @@ const VOICE_ID = "GBv7mTt0atIp3Br8iCZE"; // Todd - Professional male voice
 // Voice settings tuned for sales-oriented speech
 const VOICE_SETTINGS = {
   stability: 0.71, // Range: 0-1. Higher = more stable, lower = more variable
-  similarity_boost: 0.50, // Range: 0-1. Higher = more similar to original voice
+  similarity_boost: 0.5, // Range: 0-1. Higher = more similar to original voice
   style: 1.0, // Range: 0-1. Higher = more expressive
   use_speaker_boost: true, // Enhanced clarity
+  speaking_rate: 5.0, // Range: 0.5-5.0. Default is 1.0, higher = faster
 };
 
 export async function OPTIONS(request: NextRequest) {
@@ -92,6 +93,7 @@ export async function POST(request: NextRequest) {
         text,
         model_id: "eleven_multilingual_v2", // Using the latest model for better quality
         voice_settings: VOICE_SETTINGS,
+        speaking_rate: VOICE_SETTINGS.speaking_rate, // Apply speaking rate
       }),
     });
 

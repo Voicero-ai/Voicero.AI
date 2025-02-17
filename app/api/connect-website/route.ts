@@ -12,13 +12,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { siteUrl, wpRedirect, websiteId } = await request.json();
+    const { siteUrl, wpRedirect, websiteId, type } = await request.json();
 
-    if (!siteUrl || !wpRedirect) {
+    if (!siteUrl || !wpRedirect || !type) {
       return NextResponse.json(
         { error: "Missing required parameters" },
         { status: 400 }
       );
+    }
+
+    // Validate type
+    if (!["WordPress", "Shopify"].includes(type)) {
+      return NextResponse.json({ error: "Invalid site type" }, { status: 400 });
     }
 
     let website;
@@ -31,7 +36,7 @@ export async function POST(request: Request) {
         where: {
           id: websiteId,
           userId: session.user.id,
-          type: "WordPress",
+          type: type,
         },
         include: {
           accessKeys: true,
@@ -50,6 +55,7 @@ export async function POST(request: Request) {
         where: {
           url: siteUrl,
           userId: session.user.id,
+          type: type,
         },
         include: {
           accessKeys: true,
@@ -74,7 +80,7 @@ export async function POST(request: Request) {
           url: siteUrl,
           name: websiteName,
           userId: session.user.id,
-          type: "WordPress",
+          type: type,
           plan: "free",
           accessKeys: {
             create: {

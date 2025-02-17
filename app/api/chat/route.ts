@@ -42,27 +42,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find the website and its assistant with query limit
-    console.log(
-      "🔍 Looking up website for access key:",
-      accessKey.substring(0, 10) + "..."
-    );
-    const website = await prisma.website.findFirst({
-      where: {
-        accessKeys: {
-          some: {
-            key: accessKey,
+    // Get request body and website lookup in parallel
+    const [
+      { message, context, threadId, isVoiceInput, pastPrompts = [] },
+      website,
+    ] = await Promise.all([
+      request.json(),
+      prisma.website.findFirst({
+        where: {
+          accessKeys: {
+            some: {
+              key: accessKey,
+            },
           },
         },
-      },
-      select: {
-        id: true,
-        aiAssistantId: true,
-        monthlyQueries: true,
-        queryLimit: true,
-        plan: true,
-      },
-    });
+        select: {
+          id: true,
+          aiAssistantId: true,
+          monthlyQueries: true,
+          queryLimit: true,
+          plan: true,
+        },
+      }),
+    ]);
 
     if (!website) {
       console.log("❌ Invalid access key - no website found");
@@ -104,208 +106,92 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get request body
-    const {
-      message,
-      context,
-      threadId,
-      isVoiceInput,
-      pastPrompts = [],
-    } = await request.json();
-    console.log("📝 User message:", message);
-    console.log("🎤 Is voice input:", isVoiceInput);
-    console.log("🌍 Raw context:", context);
-    console.log("📜 Past prompts:", pastPrompts);
-
-    // If context.currentContent is empty, try to fetch content from database
+    // Parallelize content fetching if needed
+    let contentPromise = Promise.resolve(context.currentContent);
     if (!context.currentContent && context.currentUrl) {
-      console.log(
-        "🔍 Attempting to fetch content from database for URL:",
-        context.currentUrl
-      );
-
-      // Extract the path from the URL
       const urlPath = new URL(context.currentUrl).pathname;
       const slug = urlPath.split("/").filter(Boolean).pop() || "";
 
-      // Try to find content in various content types
-      const page = await prisma.wordpressPage.findFirst({
-        where: {
-          websiteId: website.id,
-          slug: slug,
-        },
+      contentPromise = Promise.all([
+        prisma.wordpressPage.findFirst({
+          where: { websiteId: website.id, slug },
+        }),
+        prisma.wordpressPost.findFirst({
+          where: { websiteId: website.id, slug },
+        }),
+        prisma.wordpressProduct.findFirst({
+          where: { websiteId: website.id, slug },
+        }),
+      ]).then(([page, post, product]) => {
+        if (page) return page.content;
+        if (post) return post.content;
+        if (product)
+          return `${product.description}\n${product.shortDescription || ""}`;
+        return null;
       });
-
-      const post = await prisma.wordpressPost.findFirst({
-        where: {
-          websiteId: website.id,
-          slug: slug,
-        },
-      });
-
-      const product = await prisma.wordpressProduct.findFirst({
-        where: {
-          websiteId: website.id,
-          slug: slug,
-        },
-      });
-
-      // Use the first content we find
-      if (page) {
-        context.currentContent = page.content;
-        console.log("📄 Found page content");
-      } else if (post) {
-        context.currentContent = post.content;
-        console.log("📝 Found post content");
-      } else if (product) {
-        context.currentContent = `${product.description}\n${
-          product.shortDescription || ""
-        }`;
-        console.log("🛍️ Found product content");
-      }
     }
+
+    // Initialize embeddings and get content in parallel
+    const [embeddings, finalContent] = await Promise.all([
+      new OpenAIEmbeddings({
+        modelName: "text-embedding-3-large",
+      }),
+      contentPromise,
+    ]);
+
+    // Update context with fetched content
+    context.currentContent = finalContent || context.currentContent;
 
     console.log(
       "📄 Final currentContent length:",
       context.currentContent?.length || 0
     );
 
-    // Initialize embeddings
-    console.log("🔄 Initializing embeddings...");
-    const embeddings = new OpenAIEmbeddings({
-      modelName: "text-embedding-3-large",
-    });
-
     // Initialize Pinecone store
-    console.log("🔄 Connecting to Pinecone...");
     const index = pinecone.Index(process.env.PINECONE_INDEX!);
     const vectorStore = await PineconeStore.fromExistingIndex(embeddings, {
       pineconeIndex: index,
-      namespace: website.id, // Use website ID as namespace
+      namespace: website.id,
     });
 
-    // Modify the search to include past prompts
-    console.log("🔍 Searching for relevant content...");
-    const combinedSearchText = [message, ...pastPrompts].join(" ");
+    // Combine past prompts with current message for better context
+    const combinedSearchText = [message, ...pastPrompts.slice(-2)].join(" "); // Only use last 2 prompts
     const searchResults = await vectorStore.similaritySearch(
       combinedSearchText,
-      3
-    );
+      2
+    ); // Reduce to 2 results
 
-    // Create context message for this query
-    const contextMessage = `Previous messages for context:
-${pastPrompts
-  .map((prompt: any, i: number) => `Message ${i + 1}: ${prompt}`)
-  .join("\n")}
+    // Optimize context message to be more concise
+    const contextMessage = `Previous context: ${pastPrompts
+      .slice(-2)
+      .join(" | ")}
 
-Relevant content for the query:
-
+Relevant content:
 ${searchResults
   .map((doc, i) => {
     const type = doc.metadata.type;
-    let content = "";
-
-    switch (type) {
-      case "page":
-        content = `Page: ${doc.metadata.title}
-URL: ${doc.metadata.url}
-Content: ${doc.metadata.content || doc.pageContent || "No content available"}`;
-        break;
-      case "product":
-        content = `Product: ${doc.metadata.name}
-URL: ${doc.metadata.url}
-Price: $${doc.metadata.price}
-Regular Price: $${doc.metadata.regularPrice}
-Description: ${doc.metadata.description || "No description available"}
-${
-  doc.metadata.shortDescription
-    ? `Short Description: ${doc.metadata.shortDescription}`
-    : ""
-}
-${
-  doc.metadata.categoryIds?.length
-    ? `Categories: ${doc.metadata.categoryIds.join(", ")}`
-    : ""
-}
-${
-  doc.metadata.reviewIds?.length
-    ? `Has Reviews: Yes (${doc.metadata.reviewIds.length})`
-    : "No Reviews"
-}`;
-        break;
-      case "post":
-        content = `Blog Post: ${doc.metadata.title}
-URL: ${doc.metadata.url}
-Content: ${doc.metadata.content || doc.pageContent || "No content available"}`;
-        break;
-      case "comment":
-        content = `Comment on "${doc.metadata.postTitle}"
-URL: ${doc.metadata.postUrl}
-By: ${doc.metadata.authorName}
-Date: ${new Date(doc.metadata.date).toLocaleDateString()}
-Content: ${doc.metadata.content}`;
-        break;
-      case "review":
-        content = `Review for "${doc.metadata.productName}"
-Rating: ${doc.metadata.rating}/5
-By: ${doc.metadata.reviewer}
-Date: ${new Date(doc.metadata.date).toLocaleDateString()}
-Content: ${doc.metadata.content}
-Verified Purchase: ${doc.metadata.verified ? "Yes" : "No"}`;
-        break;
-      default:
-        content =
-          doc.metadata.content || doc.pageContent || "No content available";
-    }
-
-    return `Content ${i + 1} (${type}):
-${content}
----`;
+    return `${type}: ${doc.metadata.title || doc.metadata.name || ""}
+${doc.metadata.content || doc.pageContent || ""}`;
   })
-  .join("\n")}
+  .join("\n---\n")}
 
-Current page: ${context.currentUrl || "No URL provided"}
-Page title: ${context.currentTitle || "No title provided"}
-Current page content: ${context.currentContent || "No content provided"}
-Input type: ${isVoiceInput ? "Voice message" : "Text message"}`;
+Current page: ${context.currentUrl}
+${context.currentContent ? "Page content available" : "No page content"}`;
 
-    console.log("📄 Final context message:", contextMessage);
-
-    // Get or create thread from database
-    let aiThread;
-    if (threadId) {
-      console.log("🔍 Looking up existing thread:", threadId);
-      aiThread = await prisma.aiThread.findFirst({
-        where: {
-          OR: [{ id: threadId }, { threadId: threadId }],
-          websiteId: website.id,
-        },
-      });
-
-      if (!aiThread) {
-        console.log("⚠️ Thread not found in database for:", {
-          searchedId: threadId,
-          websiteId: website.id,
-        });
-      } else {
-        console.log("✅ Found existing thread:", {
-          dbId: aiThread.id,
-          openAiThreadId: aiThread.threadId,
-          websiteId: aiThread.websiteId,
-        });
-      }
-    } else {
-      console.log("ℹ️ No threadId provided in request");
-    }
+    // Get or create thread and send messages in parallel
+    let aiThread = threadId
+      ? await prisma.aiThread.findFirst({
+          where: {
+            OR: [{ id: threadId }, { threadId: threadId }],
+            websiteId: website.id,
+          },
+        })
+      : null;
 
     let openAiThreadId;
     if (!aiThread) {
-      // Create new OpenAI thread
-      console.log("🤖 Creating new OpenAI thread...");
       const openAiThread = await openai.beta.threads.create();
       openAiThreadId = openAiThread.id;
-
-      // Save thread to database
       aiThread = await prisma.aiThread.create({
         data: {
           threadId: openAiThreadId,
@@ -316,34 +202,12 @@ Input type: ${isVoiceInput ? "Voice message" : "Text message"}`;
       openAiThreadId = aiThread.threadId;
     }
 
-    // Save user message to database
-    await prisma.aiMessage.create({
-      data: {
-        threadId: aiThread.id,
-        role: "user",
-        content: message,
-        type: isVoiceInput ? "voice" : "text",
-      },
-    });
-
-    // First send the context
+    // Send context and message in one go instead of multiple calls
     await openai.beta.threads.messages.create(openAiThreadId, {
       role: "user",
-      content: `${contextMessage}`,
-    });
-
-    // Then send past prompts as separate messages
-    for (const pastPrompt of pastPrompts) {
-      await openai.beta.threads.messages.create(openAiThreadId, {
-        role: "user",
-        content: pastPrompt,
-      });
-    }
-
-    // Finally send the current message
-    await openai.beta.threads.messages.create(openAiThreadId, {
-      role: "user",
-      content: `${isVoiceInput ? "[Voice Input] " : ""}${message}`,
+      content: `${contextMessage}\n\nCurrent query: ${
+        isVoiceInput ? "[Voice] " : ""
+      }${message}`,
     });
 
     // Create run with additional instructions
