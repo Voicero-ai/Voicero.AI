@@ -10,6 +10,9 @@ import {
   FaBolt,
   FaShieldAlt,
   FaTools,
+  FaUniversalAccess,
+  FaHeartbeat,
+  FaHandHoldingHeart,
 } from "react-icons/fa";
 import { Line } from "react-chartjs-2";
 import {
@@ -69,12 +72,45 @@ const chartOptions: ChartOptions<'line'> = {
   },
 };
 
+const features = [
+  {
+    icon: FaUniversalAccess,
+    title: "Voice Navigation",
+    description: "Navigate any website using simple voice commands, making the web accessible for those with limited mobility.",
+  },
+  {
+    icon: FaBrain,
+    title: "Cognitive Support",
+    description: "Simplified interface and clear instructions help stroke survivors and those with cognitive challenges browse with confidence.",
+  },
+  {
+    icon: FaHeartbeat,
+    title: "Stress-Free Browsing",
+    description: "Reduced physical strain and frustration for heart patients and seniors through intuitive voice controls.",
+  },
+  {
+    icon: FaHandHoldingHeart,
+    title: "Caregiver Support",
+    description: "Easy setup and monitoring tools help caregivers ensure their loved ones can browse independently and safely.",
+  },
+  {
+    icon: FaShieldAlt,
+    title: "Safe & Secure",
+    description: "Enterprise-grade security ensures personal information stays protected while providing accessible navigation.",
+  },
+  {
+    icon: FaTools,
+    title: "Easy Integration",
+    description: "Quick setup for any website, making your online presence instantly accessible to all users.",
+  },
+];
+
 const chartData: Record<ChartType, ChartData<'line'>> = {
   realtime: {
     labels: ['Day 3', 'Day 6', 'Day 9', 'Day 13', 'Day 17', 'Day 21', 'Day 25', 'Day 30'],
     datasets: [{
-      label: 'Real-time Analytics',
-      data: [100, 140, 80, 120, 150, 90, 130, 110],
+      label: 'User Independence Score',
+      data: [40, 65, 75, 82, 88, 92, 95, 98],
       fill: true,
       backgroundColor: 'rgba(126, 58, 242, 0.1)',
       borderColor: 'rgba(126, 58, 242, 1)',
@@ -84,8 +120,8 @@ const chartData: Record<ChartType, ChartData<'line'>> = {
   predictive: {
     labels: ['Day 3', 'Day 6', 'Day 9', 'Day 13', 'Day 17', 'Day 21', 'Day 25', 'Day 30'],
     datasets: [{
-      label: 'Predictive Analysis',
-      data: [80, 95, 130, 110, 140, 160, 150, 180],
+      label: 'Accessibility Score',
+      data: [60, 72, 80, 85, 90, 92, 95, 98],
       fill: true,
       backgroundColor: 'rgba(126, 58, 242, 0.1)',
       borderColor: 'rgba(126, 58, 242, 1)',
@@ -95,8 +131,8 @@ const chartData: Record<ChartType, ChartData<'line'>> = {
   performance: {
     labels: ['Day 3', 'Day 6', 'Day 9', 'Day 13', 'Day 17', 'Day 21', 'Day 25', 'Day 30'],
     datasets: [{
-      label: 'Performance Metrics',
-      data: [90, 110, 95, 120, 105, 130, 125, 140],
+      label: 'User Satisfaction',
+      data: [75, 82, 86, 90, 92, 94, 96, 98],
       fill: true,
       backgroundColor: 'rgba(126, 58, 242, 0.1)',
       borderColor: 'rgba(126, 58, 242, 1)',
@@ -104,39 +140,6 @@ const chartData: Record<ChartType, ChartData<'line'>> = {
     }],
   },
 };
-
-const features = [
-  {
-    icon: FaRobot,
-    title: "AI-Powered Analysis",
-    description: "Leverage advanced machine learning algorithms to extract meaningful insights from your data automatically.",
-  },
-  {
-    icon: FaBrain,
-    title: "Smart Learning",
-    description: "Our system continuously learns and adapts to your specific needs and patterns.",
-  },
-  {
-    icon: FaChartLine,
-    title: "Real-time Analytics",
-    description: "Monitor and analyze your data in real-time with interactive dashboards and visualizations.",
-  },
-  {
-    icon: FaBolt,
-    title: "Lightning Fast",
-    description: "Experience blazing-fast performance with our optimized processing engine.",
-  },
-  {
-    icon: FaShieldAlt,
-    title: "Enterprise Security",
-    description: "Rest easy knowing your data is protected with enterprise-grade security measures.",
-  },
-  {
-    icon: FaTools,
-    title: "Customizable Tools",
-    description: "Tailor the platform to your needs with our extensive suite of customization options.",
-  },
-];
 
 export default function Features() {
   const { ref, inView } = useInView({
@@ -179,11 +182,10 @@ export default function Features() {
           className="text-center mb-16"
         >
           <h2 className="text-4xl font-bold text-brand-dark mb-4">
-            Powerful Features
+            Making the Web Accessible for Everyone
           </h2>
           <p className="text-xl text-brand-dark/70 max-w-3xl mx-auto">
-            Discover the tools and capabilities that make our platform the leading choice
-            for businesses worldwide.
+            Our AI-powered voice navigation system breaks down barriers, enabling everyone to browse the web with confidence and independence.
           </p>
         </motion.div>
 
@@ -192,7 +194,7 @@ export default function Features() {
           variants={containerVariants}
           initial="hidden"
           animate={inView ? "visible" : "hidden"}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20"
         >
           {features.map((feature, index) => (
             <motion.div
@@ -220,10 +222,9 @@ export default function Features() {
         {/* Interactive Chart Section */}
         <div className="mt-32">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-brand-dark mb-4">See It in Action</h2>
+            <h2 className="text-4xl font-bold text-brand-dark mb-4">Real Impact, Real Results</h2>
             <p className="text-xl text-brand-dark/70">
-              Experience the power of our platform through interactive demonstrations and real-time
-              data visualization.
+              See how our voice navigation technology improves web accessibility and user independence over time.
             </p>
           </div>
 
@@ -254,18 +255,18 @@ export default function Features() {
               {[
                 {
                   id: 'realtime' as ChartType,
-                  title: 'Real-time Analytics',
-                  description: 'Watch as your data transforms into actionable insights instantly.',
+                  title: 'User Independence',
+                  description: 'Watch as users gain confidence and independence in their web browsing abilities.',
                 },
                 {
                   id: 'predictive' as ChartType,
-                  title: 'Predictive Analysis',
-                  description: 'See future trends based on historical data patterns.',
+                  title: 'Accessibility Score',
+                  description: 'Track how our AI adapts and improves accessibility for each user.',
                 },
                 {
                   id: 'performance' as ChartType,
-                  title: 'Performance Metrics',
-                  description: 'Track key performance indicators in real-time.',
+                  title: 'User Satisfaction',
+                  description: 'See the positive impact on user satisfaction and well-being.',
                 },
               ].map((feature) => (
                 <motion.div
@@ -296,3 +297,4 @@ export default function Features() {
     </section>
   );
 }
+ 

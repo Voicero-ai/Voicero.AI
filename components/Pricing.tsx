@@ -7,29 +7,33 @@ import Link from "next/link";
 
 const plans = [
   {
-    name: "Starter",
-    price: "49",
-    description: "Perfect for small businesses and startups",
+    name: "Free",
+    price: "0",
+    description: "Perfect for trying out our platform",
     features: [
-      "Up to 5,000 API calls/month",
-      "Basic analytics dashboard",
-      "Email support",
-      "2 team members",
-      "1 project",
+      "100 API calls/month",
+      "Basic voice commands",
+      "Standard response time",
+      "Community support",
+      "Single website integration",
+      "Basic analytics",
+      "Documentation access"
     ],
   },
   {
-    name: "Professional",
-    price: "99",
-    description: "Ideal for growing companies",
+    name: "Growth",
+    price: "10",
+    description: "Ideal for small to medium businesses",
     features: [
-      "Up to 50,000 API calls/month",
-      "Advanced analytics",
+      "50,000 API calls/month",
+      "Advanced voice commands",
       "Priority email support",
-      "5 team members",
-      "3 projects",
-      "Custom integrations",
+      "Multiple website integration",
+      "Advanced analytics dashboard",
+      "Custom voice commands",
       "API access",
+      "Team collaboration tools",
+      "Regular feature updates"
     ],
     popular: true,
   },
@@ -47,6 +51,9 @@ const plans = [
       "API access",
       "Dedicated account manager",
       "Custom development",
+      "SLA guarantees",
+      "Advanced security features",
+      "Custom training sessions"
     ],
   },
 ];

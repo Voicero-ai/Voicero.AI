@@ -8,7 +8,6 @@ import Logo from "./Logo";
 
 const navigation = [
   { name: "Features", href: "/#features" },
-  { name: "Demo", href: "/demo" },
   { name: "Pricing", href: "/#pricing" },
   { name: "About", href: "/about" },
   { name: "Contact", href: "/contact" },
