@@ -139,22 +139,6 @@ export default function Pricing() {
             </motion.div>
           ))}
         </div>
-
-        {/* FAQ Preview */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mt-20"
-        >
-          <p className="text-brand-dark/70">
-            Have questions about our pricing?{" "}
-            <Link href="/contact" className="text-brand-accent hover:underline">
-              Contact our sales team
-            </Link>
-          </p>
-        </motion.div>
       </div>
     </section>
   );
