@@ -51,9 +51,15 @@ export async function GET(request: NextRequest) {
       include: {
         _count: {
           select: {
+            // WordPress counts
             pages: true,
             posts: true,
             products: true,
+            // Shopify counts
+            shopifyPages: true,
+            shopifyProducts: true,
+            shopifyBlog: true,
+            ShopifyDiscount: true,
           },
         },
         accessKeys: true,
@@ -69,7 +75,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Return the website data
+    // Return the website data with type-specific counts
     return cors(
       request,
       NextResponse.json({
@@ -84,7 +90,19 @@ export async function GET(request: NextRequest) {
           queryLimit: website.queryLimit,
           syncFrequency: website.syncFrequency,
           lastSyncedAt: website.lastSyncedAt,
-          _count: website._count,
+          _count:
+            website.type === "WordPress"
+              ? {
+                  pages: website._count.pages,
+                  posts: website._count.posts,
+                  products: website._count.products,
+                }
+              : {
+                  pages: website._count.shopifyPages,
+                  posts: website._count.shopifyBlog,
+                  products: website._count.shopifyProducts,
+                  discounts: website._count.ShopifyDiscount,
+                },
         },
       })
     );

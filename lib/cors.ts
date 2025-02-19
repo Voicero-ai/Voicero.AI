@@ -1,30 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export async function cors(req: NextRequest, res: NextResponse) {
-  // Get origin from request
-  const origin = req.headers.get("origin") || "*";
-
-  // Set CORS headers
-  const headers = {
-    "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Max-Age": "86400", // 24 hours
-  };
+export function cors(req: NextRequest, res: NextResponse): NextResponse {
+  // Set headers to allow everything
+  res.headers.set("Access-Control-Allow-Origin", "*");
+  res.headers.set("Access-Control-Allow-Methods", "*");
+  res.headers.set("Access-Control-Allow-Headers", "*");
+  res.headers.set("Access-Control-Allow-Credentials", "true");
+  res.headers.set("Access-Control-Max-Age", "86400"); // 24 hours
 
   // Handle preflight requests
   if (req.method === "OPTIONS") {
-    return new NextResponse(null, {
-      status: 204,
-      headers,
-    });
+    res.headers.set("Content-Length", "0");
+    res.headers.set("Content-Type", "text/plain");
   }
-
-  // Add headers to response
-  Object.entries(headers).forEach(([key, value]) => {
-    res.headers.set(key, value);
-  });
 
   return res;
 }
