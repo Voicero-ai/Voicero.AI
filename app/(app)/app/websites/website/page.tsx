@@ -322,6 +322,10 @@ export default function WebsiteSettings() {
     const [showComments, setShowComments] = useState<Record<string, boolean>>(
       {}
     );
+    const [showVariants, setShowVariants] = useState<Record<string, boolean>>(
+      {}
+    );
+    const [showImages, setShowImages] = useState<Record<string, boolean>>({});
 
     const toggleExpand = (itemId: string) => {
       setExpandedItems((prev) =>
@@ -337,6 +341,14 @@ export default function WebsiteSettings() {
 
     const toggleComments = (itemId: string) => {
       setShowComments((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
+    };
+
+    const toggleVariants = (itemId: string) => {
+      setShowVariants((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
+    };
+
+    const toggleImages = (itemId: string) => {
+      setShowImages((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
     };
 
     return (
@@ -412,7 +424,109 @@ export default function WebsiteSettings() {
                       Stock: {item.stockQuantity}
                     </span>
                   )}
+                  {item.vendor && (
+                    <span className="text-sm text-brand-text-secondary">
+                      Vendor: {item.vendor}
+                    </span>
+                  )}
+                  {item.productType && (
+                    <span className="text-sm text-brand-text-secondary">
+                      Type: {item.productType}
+                    </span>
+                  )}
                 </div>
+
+                {/* Product Variants */}
+                {item.variants && item.variants.length > 0 && (
+                  <div className="mt-4">
+                    <button
+                      onClick={() => toggleVariants(item.id)}
+                      className="text-brand-accent hover:text-brand-accent/80 transition-colors"
+                    >
+                      {showVariants[item.id]
+                        ? "Hide Variants"
+                        : `Show Variants (${item.variants.length})`}
+                    </button>
+                    {showVariants[item.id] && (
+                      <div className="mt-2 grid gap-2">
+                        {item.variants.map((variant: any) => (
+                          <div
+                            key={variant.id}
+                            className="p-2 bg-brand-lavender-light/5 rounded-lg"
+                          >
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium">
+                                {variant.title}
+                              </span>
+                              <span className="text-brand-accent">
+                                ${variant.price}
+                              </span>
+                            </div>
+                            {variant.sku && (
+                              <span className="text-sm text-brand-text-secondary">
+                                SKU: {variant.sku}
+                              </span>
+                            )}
+                            {variant.inventory !== null && (
+                              <span className="text-sm text-brand-text-secondary ml-4">
+                                Stock: {variant.inventory}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Product Images */}
+                {item.images && item.images.length > 0 && (
+                  <div className="mt-4">
+                    <button
+                      onClick={() => toggleImages(item.id)}
+                      className="text-brand-accent hover:text-brand-accent/80 transition-colors"
+                    >
+                      {showImages[item.id]
+                        ? "Hide Images"
+                        : `Show Images (${item.images.length})`}
+                    </button>
+                    {showImages[item.id] && (
+                      <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {item.images.map((image: any) => (
+                          <div
+                            key={image.id}
+                            className="relative aspect-square rounded-lg overflow-hidden"
+                          >
+                            <img
+                              src={image.url}
+                              alt={image.altText || item.title}
+                              className="object-cover w-full h-full"
+                            />
+                            {image.caption && (
+                              <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-1 text-xs">
+                                {image.caption}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Blog post specific information */}
+            {item.type === "post" && item.blog && (
+              <div className="mb-2 text-sm text-brand-text-secondary">
+                <span>Blog: {item.blog.title}</span>
+                {item.image && (
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="mt-2 rounded-lg max-h-48 object-cover"
+                  />
+                )}
               </div>
             )}
 

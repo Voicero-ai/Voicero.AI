@@ -255,7 +255,7 @@ export default function Dashboard() {
                     Access Keys
                   </h3>
                   <p className="text-sm text-brand-text-secondary">
-                    Manage your API keys
+                    Manage your Access Keys
                   </p>
                 </div>
               </Link>

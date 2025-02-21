@@ -189,6 +189,7 @@ export default function Settings() {
           throw new Error("Failed to fetch websites");
         }
         const websitesData = await websitesRes.json();
+        console.log(websitesData);
         setWebsites(websitesData);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -630,7 +631,7 @@ export default function Settings() {
                       <p className="text-sm text-brand-text-secondary">
                         {site.name} • {site.type} • {site.plan} Plan
                       </p>
-                      {site.plan === "Free" ? null : (
+                      {site.plan === "free" ? null : (
                         <p className="text-sm text-brand-text-secondary">
                           Renews on{" "}
                           {new Date(site.renewsOn).toLocaleDateString()}

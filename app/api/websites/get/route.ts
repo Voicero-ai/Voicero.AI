@@ -215,10 +215,15 @@ export async function GET(request: NextRequest) {
 
       // 6) If Shopify => fetch from Shopify tables
     } else if (website.type === "Shopify") {
-      // Shopify Products
+      // Shopify Products with variants, reviews, and images
       const shopifyProducts = await prisma.shopifyProduct.findMany({
         where: { websiteId },
         orderBy: { updatedAt: "desc" },
+        include: {
+          variants: true,
+          reviews: true,
+          images: true,
+        },
       });
 
       products = shopifyProducts.map((prod) => ({
@@ -229,32 +234,79 @@ export async function GET(request: NextRequest) {
         lastUpdated: prod.updatedAt.toISOString(),
         aiRedirects: getRedirectCount(`/products/${prod.handle}`),
         description: prod.description,
+        // Add more product details
+        vendor: prod.vendor,
+        productType: prod.productType,
+        // Format price from first variant
+        price: prod.variants[0]?.price || 0,
+        // Include all variants
+        variants: prod.variants.map((v) => ({
+          id: v.id,
+          title: v.title,
+          price: v.price,
+          sku: v.sku,
+          inventory: v.inventory,
+        })),
+        // Include reviews
+        reviews: prod.reviews.map((r) => ({
+          id: r.id,
+          reviewer: r.reviewer,
+          rating: r.rating,
+          review: r.body,
+          title: r.title,
+          verified: r.verified,
+          date: r.createdAt.toISOString(),
+        })),
+        // Include images
+        images: prod.images.map((img) => ({
+          id: img.id,
+          url: img.url,
+          altText: img.altText,
+          caption: img.caption,
+        })),
       }));
 
-      // Shopify Blog Posts => we have to join ShopifyBlog and ShopifyBlogPost
-      // If you want them all, fetch them in one pass or multiple passes
+      // Shopify Blog Posts with comments
       const shopifyBlogs = await prisma.shopifyBlog.findMany({
         where: { websiteId },
         include: {
           posts: {
+            include: {
+              comments: true,
+            },
             orderBy: { updatedAt: "desc" },
           },
         },
       });
 
-      // Flatten all blog posts across all blogs
-      const allShopifyPosts = shopifyBlogs.flatMap((blog) => blog.posts);
-
-      blogPosts = allShopifyPosts.map((post) => ({
-        id: post.id,
-        title: post.title,
-        url: `/blogs/${post.handle}`, // or however you form the URL
-        type: "post" as const,
-        lastUpdated: post.updatedAt.toISOString(),
-        aiRedirects: getRedirectCount(`/blogs/${post.handle}`),
-        content: post.content,
-        author: post.author,
-      }));
+      blogPosts = shopifyBlogs.flatMap((blog) =>
+        blog.posts.map((post) => ({
+          id: post.id,
+          title: post.title,
+          url: `/blogs/${blog.handle}/${post.handle}`,
+          type: "post" as const,
+          lastUpdated: post.updatedAt.toISOString(),
+          aiRedirects: getRedirectCount(`/blogs/${blog.handle}/${post.handle}`),
+          content: post.content,
+          author: post.author,
+          image: post.image,
+          // Include blog info
+          blog: {
+            id: blog.id,
+            title: blog.title,
+            handle: blog.handle,
+          },
+          // Include comments
+          comments: post.comments.map((c) => ({
+            id: c.id,
+            author: c.author,
+            content: c.body,
+            email: c.email,
+            status: c.status,
+            date: c.createdAt.toISOString(),
+          })),
+        }))
+      );
 
       // Shopify Pages
       const shopifyPages = await prisma.shopifyPage.findMany({
@@ -265,10 +317,10 @@ export async function GET(request: NextRequest) {
       pages = shopifyPages.map((p) => ({
         id: p.id,
         title: p.title,
-        url: `/${p.handle}`,
+        url: `/pages/${p.handle}`,
         type: "page" as const,
         lastUpdated: p.updatedAt.toISOString(),
-        aiRedirects: getRedirectCount(`/${p.handle}`),
+        aiRedirects: getRedirectCount(`/pages/${p.handle}`),
         content: p.content,
       }));
     } else {

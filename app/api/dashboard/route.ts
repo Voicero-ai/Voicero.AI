@@ -2,6 +2,8 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { subDays, startOfDay, endOfDay, isSameDay } from "date-fns";
+import { toZonedTime, fromZonedTime } from "date-fns-tz";
 
 export async function GET() {
   try {
@@ -13,7 +15,19 @@ export async function GET() {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // Get user's websites using userId directly from session
+    // Generate dates for the last 7 days in UTC
+    const dates = Array.from({ length: 7 })
+      .map((_, i) => {
+        const date = subDays(new Date(), i);
+        const utcDate = toZonedTime(date, "UTC");
+        return {
+          start: startOfDay(utcDate),
+          end: endOfDay(utcDate),
+        };
+      })
+      .reverse();
+
+    // Get user's websites with date-filtered threads
     const websites = await prisma.website.findMany({
       where: {
         userId: session.user.id,
@@ -24,13 +38,21 @@ export async function GET() {
         type: true,
         active: true,
         aiThreads: {
+          where: {
+            createdAt: {
+              gte: dates[0].start, // First date start
+              lte: dates[dates.length - 1].end, // Last date end
+            },
+          },
           select: {
             messages: {
               select: {
                 content: true,
                 type: true,
+                createdAt: true,
               },
             },
+            createdAt: true,
           },
         },
         createdAt: true,
@@ -97,9 +119,22 @@ export async function GET() {
       createdAt: site.createdAt,
     }));
 
-    const chartData = websites.reduce((acc: any[], website) => {
-      const date = website.createdAt;
-      const redirects = website.aiThreads.reduce((sum, thread) => {
+    // Generate chart data for each day
+    const chartData = dates.map(({ start }) => {
+      const dayThreads = websites.flatMap((site) =>
+        site.aiThreads.filter((thread) => {
+          const threadDate = new Date(thread.createdAt);
+          return isSameDay(threadDate, start);
+        })
+      );
+
+      console.log("Date being checked:", start);
+      console.log(
+        "Threads for this day:",
+        dayThreads.map((t) => t.createdAt)
+      );
+
+      const redirects = dayThreads.reduce((sum, thread) => {
         return (
           sum +
           thread.messages.reduce((messageSum, message) => {
@@ -112,11 +147,13 @@ export async function GET() {
           }, 0)
         );
       }, 0);
-      const chats = website.aiThreads.length;
 
-      acc.push({ date, redirects, chats });
-      return acc;
-    }, []);
+      return {
+        date: start.toISOString(),
+        redirects,
+        chats: dayThreads.length,
+      };
+    });
 
     return NextResponse.json({
       stats: {
