@@ -29,6 +29,11 @@ export async function GET(request: NextRequest) {
             messages: true,
           },
         },
+        popUpQuestions: {
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
       },
     });
 
@@ -345,6 +350,14 @@ export async function GET(request: NextRequest) {
       queryLimit: website.queryLimit,
       lastSync: website.lastSyncedAt?.toISOString() || null,
       accessKey: website.accessKeys[0]?.key || null,
+      // Add custom instructions
+      customInstructions: website.customInstructions,
+      // Add pop-up questions
+      popUpQuestions: website.popUpQuestions.map((q) => ({
+        id: q.id,
+        question: q.question,
+        createdAt: q.createdAt.toISOString(),
+      })),
       globalStats,
       stats: {
         aiRedirects: globalStats.totalAiRedirects,

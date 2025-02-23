@@ -78,6 +78,12 @@ interface WebsiteData {
     pages: ContentItem[];
   };
   stripeId?: string;
+  customInstructions: string | null;
+  popUpQuestions: Array<{
+    id: string;
+    question: string;
+    createdAt: string;
+  }>;
 }
 
 // Add these interfaces at the top with your other interfaces
@@ -92,6 +98,11 @@ interface SetupInstructions {
     appUrl: string;
     pluginUrl?: never;
   };
+}
+
+// Add this helper function at the top of the file
+function countWords(str: string): number {
+  return str.trim().split(/\s+/).length;
 }
 
 export default function WebsiteSettings() {
@@ -112,6 +123,9 @@ export default function WebsiteSettings() {
 
   // Add this state to track the toggle operation
   const [isToggling, setIsToggling] = useState(false);
+
+  // Add this state for syncing status
+  const [isSyncingInstructions, setIsSyncingInstructions] = useState(false);
 
   const setupInstructions: SetupInstructions = {
     wordpress: {
@@ -287,6 +301,37 @@ export default function WebsiteSettings() {
       console.error("Error toggling status:", error);
     } finally {
       setIsToggling(false);
+    }
+  };
+
+  // Add this function to handle syncing instructions with OpenAI assistants
+  const handleSyncInstructions = async () => {
+    if (!websiteData) return;
+
+    setIsSyncingInstructions(true);
+    try {
+      const response = await fetch("/api/websites/sync-instructions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          websiteId: websiteData.id,
+          instructions: websiteData.customInstructions,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to sync instructions");
+      }
+
+      // Show success toast or message
+    } catch (error) {
+      console.error("Error syncing instructions:", error);
+      // Show error toast or message
+    } finally {
+      setIsSyncingInstructions(false);
     }
   };
 
@@ -971,6 +1016,270 @@ export default function WebsiteSettings() {
               }}
             />
           </div>
+        </div>
+      </div>
+
+      {/* Custom Instructions */}
+      <div className="bg-white rounded-xl shadow-sm border border-brand-lavender-light/20 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-brand-text-primary">
+            AI Assistant Instructions
+          </h2>
+          <div className="flex items-center gap-4">
+            <span
+              className={`text-sm ${
+                countWords(websiteData?.customInstructions || "") > 300
+                  ? "text-red-500"
+                  : "text-brand-text-secondary"
+              }`}
+            >
+              {countWords(websiteData?.customInstructions || "")} / 300 words
+            </span>
+            <button
+              onClick={handleSyncInstructions}
+              disabled={isSyncingInstructions}
+              className="px-3 py-1 text-sm bg-brand-accent text-white rounded-lg 
+                        hover:bg-brand-accent/90 transition-colors disabled:opacity-50"
+            >
+              {isSyncingInstructions ? (
+                <>
+                  <FaSync className="inline-block mr-2 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <FaSync className="inline-block mr-2" />
+                  Sync with AI
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+        <div className="space-y-4">
+          <textarea
+            value={websiteData?.customInstructions || ""}
+            onChange={async (e) => {
+              // Check word count
+              if (countWords(e.target.value) > 300) {
+                return; // Don't update if exceeding limit
+              }
+
+              // Optimistically update
+              setWebsiteData({
+                ...websiteData!,
+                customInstructions: e.target.value,
+              } as WebsiteData);
+
+              // Update in database
+              try {
+                const response = await fetch(
+                  "/api/websites/update-instructions",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      websiteId: websiteData?.id,
+                      instructions: e.target.value,
+                    }),
+                  }
+                );
+
+                if (!response.ok) {
+                  const data = await response.json();
+                  throw new Error(
+                    data.error || "Failed to update instructions"
+                  );
+                }
+              } catch (error) {
+                console.error("Error updating instructions:", error);
+                // Revert on error
+                setWebsiteData({
+                  ...websiteData!,
+                  customInstructions: websiteData?.customInstructions,
+                } as WebsiteData);
+              }
+            }}
+            placeholder="Add custom instructions for how the AI assistant should behave when chatting with your customers..."
+            className={`w-full h-32 p-3 rounded-lg border 
+                       ${
+                         countWords(websiteData?.customInstructions || "") > 300
+                           ? "border-red-500"
+                           : "border-brand-lavender-light/20"
+                       }
+                       focus:outline-none focus:ring-2 focus:ring-brand-accent/20`}
+          />
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-brand-text-secondary">
+              These instructions will guide how the AI assistant interacts with
+              your customers.
+            </p>
+            {countWords(websiteData?.customInstructions || "") > 300 && (
+              <p className="text-sm text-red-500">
+                Instructions cannot exceed 300 words
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Pop-up Questions */}
+      <div className="bg-white rounded-xl shadow-sm border border-brand-lavender-light/20 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-brand-text-primary">
+            Pop-up Questions
+          </h2>
+          <span className="text-sm text-brand-text-secondary">
+            {websiteData?.popUpQuestions?.length || 0} / 5 questions
+          </span>
+        </div>
+
+        <div className="space-y-4">
+          {websiteData?.popUpQuestions?.map((question, index) => (
+            <div key={question.id} className="flex items-center gap-3">
+              <input
+                type="text"
+                value={question.question}
+                onChange={async (e) => {
+                  const newQuestions = [...(websiteData?.popUpQuestions || [])];
+                  newQuestions[index] = {
+                    ...question,
+                    question: e.target.value,
+                  };
+
+                  // Optimistically update
+                  setWebsiteData({
+                    ...websiteData!,
+                    popUpQuestions: newQuestions,
+                  } as WebsiteData);
+
+                  // Update in database
+                  try {
+                    const response = await fetch(
+                      "/api/websites/update-question",
+                      {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                          questionId: question.id,
+                          question: e.target.value,
+                        }),
+                      }
+                    );
+
+                    if (!response.ok)
+                      throw new Error("Failed to update question");
+                  } catch (error) {
+                    console.error("Error updating question:", error);
+                    // Revert on error
+                    setWebsiteData({
+                      ...websiteData!,
+                      popUpQuestions: websiteData?.popUpQuestions,
+                    } as WebsiteData);
+                  }
+                }}
+                className="flex-1 p-2 rounded-lg border border-brand-lavender-light/20 
+                           focus:outline-none focus:ring-2 focus:ring-brand-accent/20"
+              />
+              <button
+                onClick={async () => {
+                  // Optimistically update
+                  setWebsiteData({
+                    ...websiteData!,
+                    popUpQuestions: websiteData?.popUpQuestions?.filter(
+                      (q) => q.id !== question.id
+                    ),
+                  } as WebsiteData);
+
+                  // Delete from database
+                  try {
+                    const response = await fetch(
+                      "/api/websites/delete-question",
+                      {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                          questionId: question.id,
+                        }),
+                      }
+                    );
+
+                    if (!response.ok)
+                      throw new Error("Failed to delete question");
+                  } catch (error) {
+                    console.error("Error deleting question:", error);
+                    // Revert on error
+                    setWebsiteData({
+                      ...websiteData!,
+                      popUpQuestions: websiteData?.popUpQuestions,
+                    } as WebsiteData);
+                  }
+                }}
+                className="p-2 text-red-500 hover:text-red-600 transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+          ))}
+
+          {(websiteData?.popUpQuestions?.length || 0) < 5 && (
+            <button
+              onClick={async () => {
+                try {
+                  const response = await fetch("/api/websites/add-question", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      websiteId: websiteData?.id,
+                      question: "New Question",
+                    }),
+                  });
+
+                  if (!response.ok) throw new Error("Failed to add question");
+
+                  const newQuestion = await response.json();
+
+                  setWebsiteData({
+                    ...websiteData!,
+                    popUpQuestions: [
+                      ...(websiteData?.popUpQuestions || []),
+                      newQuestion,
+                    ],
+                  } as WebsiteData);
+                } catch (error) {
+                  console.error("Error adding question:", error);
+                }
+              }}
+              className="w-full p-2 border-2 border-dashed border-brand-lavender-light/20 
+                         rounded-lg text-brand-text-secondary hover:text-brand-accent 
+                         hover:border-brand-accent/20 transition-colors"
+            >
+              + Add Question
+            </button>
+          )}
+
+          <p className="text-sm text-brand-text-secondary">
+            These questions will be shown to users in a pop-up when they first
+            visit your website.
+          </p>
         </div>
       </div>
 

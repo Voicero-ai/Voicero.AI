@@ -25,22 +25,24 @@ model User {
 }
 
 model Website {
-  id             String      @id @default(uuid())
-  url            String
-  name           String?
-  userId         String
-  type           String
-  createdAt      DateTime    @default(now())
-  renewsOn       DateTime?
-  plan           String
-  stripeId       String?     @unique
-  active         Boolean     @default(false)
-  syncFrequency  String      @default("daily")
-  lastSyncedAt   DateTime?
-  monthlyQueries Int         @default(0)
-  accessKeys     AccessKey[]
-  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  queryLimit     Int         @default(10000)
+  id                 String          @id @default(uuid())
+  url                String
+  name               String?
+  userId             String
+  type               String
+  createdAt          DateTime        @default(now())
+  renewsOn           DateTime?
+  plan               String
+  stripeId           String?         @unique
+  active             Boolean         @default(false)
+  syncFrequency      String          @default("daily")
+  lastSyncedAt       DateTime?
+  monthlyQueries     Int             @default(0)
+  customInstructions String?
+  popUpQuestions     PopUpQuestion[]
+  accessKeys         AccessKey[]
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  queryLimit         Int             @default(10000)
 
   // WordPress
   posts    WordpressPost[]
@@ -68,6 +70,14 @@ model Website {
   ShopifyBlogPost          ShopifyBlogPost[]
 
   @@index([userId])
+}
+
+model PopUpQuestion {
+  id        String   @id @default(uuid())
+  question  String
+  createdAt DateTime @default(now())
+  websiteId String
+  Website   Website  @relation(fields: [websiteId], references: [id])
 }
 
 model AccessKey {

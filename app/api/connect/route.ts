@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
           },
         },
         accessKeys: true,
+        popUpQuestions: true,
       },
     });
 
@@ -90,6 +91,8 @@ export async function GET(request: NextRequest) {
           queryLimit: website.queryLimit,
           syncFrequency: website.syncFrequency,
           lastSyncedAt: website.lastSyncedAt,
+          customInstructions: website.customInstructions,
+          popUpQuestions: website.popUpQuestions,
           _count:
             website.type === "WordPress"
               ? {
