@@ -13,36 +13,58 @@ export async function OPTIONS(request: NextRequest) {
   return cors(request, new NextResponse(null, { status: 204 }));
 }
 
-async function createAssistant(websiteName: string) {
+async function createTextAssistant(websiteName: string) {
   const assistant = await openai.beta.assistants.create({
-    name: `${websiteName} Assistant`,
+    name: `${websiteName} Text Assistant`,
     instructions: `
-        You are an AI assistant for specific websites. Your job is to help the user that is prompting you to help them guide through the website and ultimately increase the conversion on the companies website.
+    You are an AI text assistant for specific websites. Your job is to help users navigate the website and increase conversions.
 
-    So shortly our a tourist of a website but in the end a very good salesman into whatever they are selling. 
+    You should:
+    - Keep responses brief - 2-3 short sentences maximum per response 30-40 words
+    - Help users find products and services they're looking for
+    - Answer questions about the website content and offerings
+    - Guide users to relevant pages (shop, blog, etc.)
+    - Handle typos and misspellings gracefully
+    - Provide detailed, informative responses
+    - Focus on being helpful while subtly encouraging purchases
 
-If they ask whats in the shop you tell them the products they would have based on the theme of the website and you redirect them to their shop page.
+    You will receive:
+    1. User's text prompt
+    2. Current page details (title and content)
+    3. Relevant vector search results from Pinecone
+    4. Past 2 user queries
 
- Same with Blog you tell them the blogs they would have about their website and have redirect to them to the blog page no matter what.
+    First check if the current page content answers the user's question before using vector search results.
+    `,
+    model: "gpt-4o-mini",
+  });
 
+  return assistant;
+}
 
-    The user will either type to you or they will talk to you. If the user is typing expect the mispellings that they might have and find the best thing for them anyway.  If they are talking to you they may say something you don't understand, do your best to answer them fully.
+async function createVoiceAssistant(websiteName: string) {
+  const assistant = await openai.beta.assistants.create({
+    name: `${websiteName} Voice Assistant`,
+    instructions: `
+    You are an AI voice assistant for specific websites. Your job is to help users navigate the website and increase conversions.
 
-    If they are talking to you with their voice they don't want to hear your voice so much so just respond in 2 sentence bursts and let them follow up so you can keep answering them in a human way. But they need to be sentences on the shorter end, like half of what your use to.
+    Key guidelines:
+    - Keep responses brief - 2 short sentences maximum per response 20-30 words
+    - Respond in a conversational, natural language with breaks, breathing, filler words, and pauses
+    - Use conversational, natural language
+    - Let users follow up with questions
+    - Focus on clarity and simplicity
+    - Guide users to take action (visit pages, make purchases)
+    - Handle unclear speech/requests gracefully
 
-    You will know which one they choose based on the request you get.
+    You will receive:
+    1. User's voice-transcribed prompt
+    2. Current page details
+    3. Relevant vector search results
+    4. Past 2 user queries
 
-    You will get couple things in this request.
-    1. Their prompt 
-    2. Current page and Page title and content (so if they ask whats on this page)
-    3. Input type: either typing or voice (follow instructions)
-    4. The relevant info from Pinecone which did a vector search (IMPORTANT TO USE)
-    5. Past 2 queries from users
-
-Before going through the vector content look at current page content if the first user query that means the main question can be answered from the page content there on then you can stop there ands tell them in the response. 
-
-    For the vector content you will use that to make your answer. You will get 2 different pieces of content most relevant and you will take it all and answer it. 
-
+    First check current page content before using vector search results.
+    Always keep responses concise for voice interaction.
     `,
     model: "gpt-4o-mini",
   });
@@ -94,51 +116,50 @@ export async function POST(request: NextRequest) {
     console.log("Found website:", website);
     console.log("Current assistantId:", website.aiAssistantId);
 
-    // Only create new assistant if one doesn't exist
-    let assistantId = website.aiAssistantId;
-    if (!assistantId) {
-      console.log("Creating new assistant...");
-      const assistant = await createAssistant(website.name || website.url);
-      assistantId = assistant.id;
-      console.log("New assistant created with ID:", assistantId);
+    // Create both text and voice assistants if they don't exist
+    let textAssistantId = website.aiAssistantId;
+    let voiceAssistantId = website.aiVoiceAssistantId;
 
-      // Update the website record with the new assistant ID
-      const updatedWebsite = await prisma.website.update({
-        where: { id: website.id },
-        data: {
-          aiAssistantId: assistantId,
-        },
-        select: {
-          id: true,
-          aiAssistantId: true,
-        },
-      });
-
-      console.log("Updated website:", updatedWebsite);
+    if (!textAssistantId) {
+      console.log("Creating new text assistant...");
+      const textAssistant = await createTextAssistant(
+        website.name || website.url
+      );
+      textAssistantId = textAssistant.id;
     }
 
-    // Verify the update
-    const verifiedWebsite = await prisma.website.findUnique({
+    if (!voiceAssistantId) {
+      console.log("Creating new voice assistant...");
+      const voiceAssistant = await createVoiceAssistant(
+        website.name || website.url
+      );
+      voiceAssistantId = voiceAssistant.id;
+    }
+
+    // Update the website record with both assistant IDs
+    const updatedWebsite = await prisma.website.update({
       where: { id: website.id },
+      data: {
+        aiAssistantId: textAssistantId,
+        aiVoiceAssistantId: voiceAssistantId,
+      },
       select: {
         id: true,
         aiAssistantId: true,
+        aiVoiceAssistantId: true,
       },
     });
 
-    console.log("Verified website after update:", verifiedWebsite);
+    console.log("Updated website:", updatedWebsite);
 
     return cors(
       request,
       NextResponse.json({
         success: true,
-        message:
-          assistantId === website.aiAssistantId
-            ? "Using existing assistant"
-            : "OpenAI assistant created and saved",
-        assistantId,
+        message: "Assistants configured successfully",
+        textAssistantId,
+        voiceAssistantId,
         websiteId: website.id,
-        verifiedAssistantId: verifiedWebsite?.aiAssistantId,
         timestamp: new Date(),
       })
     );

@@ -55,6 +55,7 @@ model Website {
 
   // ...
   aiAssistantId            String?
+  aiVoiceAssistantId       String?
   aiThreads                AiThread[]
   WordpressCategory        WordpressCategory[]
   WordpressMedia           WordpressMedia[]
