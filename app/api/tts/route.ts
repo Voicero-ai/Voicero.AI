@@ -7,7 +7,6 @@ const prisma = new PrismaClient();
 
 // ElevenLabs API configuration
 const ELEVEN_LABS_API_URL = "https://api.elevenlabs.io/v1/text-to-speech";
-const VOICE_ID = "GBv7mTt0atIp3Br8iCZE"; // Todd - Professional male voice
 
 // Voice settings tuned for sales-oriented speech
 const VOICE_SETTINGS = {
@@ -82,7 +81,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Call ElevenLabs API
+    const VOICE_ID = "DtsPFCrhbCbbJkwZsb3d"; // Replace with Piper's actual voice ID
+
     const response = await fetch(`${ELEVEN_LABS_API_URL}/${VOICE_ID}`, {
       method: "POST",
       headers: {
@@ -91,11 +91,13 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         text,
-        model_id: "eleven_multilingual_v2", // Using the latest model for better quality
+        model_id: "eleven_multilingual_v2", // Best quality model
         voice_settings: VOICE_SETTINGS,
         speaking_rate: VOICE_SETTINGS.speaking_rate, // Apply speaking rate
+        output_format: "pcm_44100", // Ensures 44.1 kHz PCM quality (Best possible)
       }),
     });
+
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
