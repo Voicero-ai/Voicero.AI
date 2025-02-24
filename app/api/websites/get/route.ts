@@ -25,8 +25,15 @@ export async function GET(request: NextRequest) {
           take: 1,
         },
         aiThreads: {
+          orderBy: {
+            createdAt: "desc",
+          },
           include: {
-            messages: true,
+            messages: {
+              orderBy: {
+                createdAt: "asc",
+              },
+            },
           },
         },
         popUpQuestions: {
@@ -44,6 +51,46 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Let's also log the raw count from the database
+    const threadCount = await prisma.aiThread.count({
+      where: { websiteId },
+    });
+
+    console.log("Raw thread count from database:", threadCount);
+
+    // After the website query
+    console.log("Website data:", {
+      id: website.id,
+      url: website.url,
+      threadCount: website.aiThreads.length,
+      threads: website.aiThreads.map((thread) => ({
+        id: thread.id,
+        messageCount: thread.messages.length,
+        messages: thread.messages.map((msg) => ({
+          role: msg.role,
+          type: msg.type,
+          content: msg.content.substring(0, 30),
+        })),
+      })),
+    });
+
+    // After the website query and before the stats calculation
+    const rawThreads = await prisma.$queryRaw`
+      SELECT COUNT(*) as count 
+      FROM AiThread 
+      WHERE websiteId = ${websiteId}`;
+
+    console.log("Raw SQL thread count:", rawThreads);
+
+    // Also check a few threads directly
+    const sampleThreads = await prisma.$queryRaw`
+      SELECT id, threadId, websiteId 
+      FROM AiThread 
+      WHERE websiteId = ${websiteId} 
+      LIMIT 5`;
+
+    console.log("Sample threads:", sampleThreads);
+
     // Calculate global stats and content-specific redirects
     const globalStats = {
       totalAiRedirects: 0,
@@ -54,56 +101,72 @@ export async function GET(request: NextRequest) {
     // Create a map to track redirects per URL
     const urlRedirectCounts = new Map<string, number>();
 
+    // At the start of the counting logic
+    console.log("Total threads:", website.aiThreads.length);
+
     // Iterate through all threads and their messages
     website.aiThreads.forEach((thread) => {
       let hasVoiceMessage = false;
       let hasTextMessage = false;
 
+      console.log("Thread messages:", thread.messages.length);
+
       thread.messages.forEach((message) => {
-        // Try to parse content as JSON to check for redirect_url
+        console.log("Message:", {
+          role: message.role,
+          type: message.type,
+          content: message.content.substring(0, 50) + "...", // First 50 chars
+        });
+
+        // Only count user messages for voice/text stats
+        if (message.role === "user") {
+          if (message.type === "voice") {
+            hasVoiceMessage = true;
+            console.log("Found voice message");
+          }
+          if (message.type === "text" || !message.type) {
+            hasTextMessage = true;
+            console.log("Found text message");
+          }
+        }
+
+        // Check for redirects (keep existing redirect counting logic)
         try {
           const contentJson = JSON.parse(message.content);
           if (contentJson.redirect_url) {
             globalStats.totalAiRedirects++;
-            // Get pathname from the full URL, ignoring the domain
             const url = new URL(contentJson.redirect_url);
-            const normalizedUrl = url.pathname.replace(/\/$/, ""); // Remove trailing slash
+            const normalizedUrl = url.pathname.replace(/\/$/, "");
             urlRedirectCounts.set(
               normalizedUrl,
               (urlRedirectCounts.get(normalizedUrl) || 0) + 1
             );
           }
         } catch (e) {
-          // If message.pageUrl exists (legacy format), count that
           if (message.pageUrl) {
             globalStats.totalAiRedirects++;
-            // Get pathname from the full URL, ignoring the domain
             const url = new URL(message.pageUrl);
-            const normalizedUrl = url.pathname.replace(/\/$/, ""); // Remove trailing slash
+            const normalizedUrl = url.pathname.replace(/\/$/, "");
             urlRedirectCounts.set(
               normalizedUrl,
               (urlRedirectCounts.get(normalizedUrl) || 0) + 1
             );
           }
         }
-
-        // Track message types
-        if (message.type === "voice") {
-          hasVoiceMessage = true;
-        }
-        if (message.type === "text") {
-          hasTextMessage = true;
-        }
       });
 
-      // Add to total counts if thread had respective message types
       if (hasVoiceMessage) {
         globalStats.totalVoiceChats++;
+        console.log("Incrementing voice chats");
       }
       if (hasTextMessage) {
         globalStats.totalTextChats++;
+        console.log("Incrementing text chats");
       }
     });
+
+    // After counting
+    console.log("Final stats:", globalStats);
 
     // Helper function to get redirect count for a URL - normalize input URL
     const getRedirectCount = (url: string) => {

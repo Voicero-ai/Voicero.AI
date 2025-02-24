@@ -89,6 +89,7 @@ export async function GET(request: NextRequest) {
           active: website.active,
           monthlyQueries: website.monthlyQueries,
           queryLimit: website.queryLimit,
+          renewsOn: website.renewsOn,
           syncFrequency: website.syncFrequency,
           lastSyncedAt: website.lastSyncedAt,
           customInstructions: website.customInstructions,

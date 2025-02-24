@@ -186,25 +186,25 @@ export default function WebsiteSettings() {
   const handleSync = async () => {
     if (!websiteData) return;
 
-    // If no access key, show setup modal
-    if (!websiteData.accessKey) {
-      setShowSetupModal(true);
-      return;
-    }
-
     setIsSyncing(true);
     try {
-      // Fix the type check here as well
       const type = websiteData.type?.toLowerCase() || "";
       const isWordPress =
         type === "wordpress" || type === "wp" || type.includes("wordpress");
 
       if (isWordPress) {
-        // Construct WordPress admin URL
+        // WordPress logic remains the same
         const adminUrl = `${websiteData.domain}/wp-admin/admin.php?page=ai-website-admin`;
         window.open(adminUrl, "_blank");
       } else if (type === "shopify") {
-        window.open(setupInstructions.shopify.appUrl, "_blank");
+        // Extract store name from domain - handle both myshopify.com and custom domains
+        const storeName = websiteData.domain
+          .replace(/^https?:\/\//, "") // Remove http:// or https://
+          .split(".")[0]; // Get the first part of the domain
+
+        // Redirect to Shopify admin app page
+        const shopifyAdminUrl = `https://admin.shopify.com/store/${storeName}/apps/voicero-app-shop/app`;
+        window.open(shopifyAdminUrl, "_blank");
       }
     } catch (error) {
       console.error("Error during sync:", error);
@@ -218,7 +218,21 @@ export default function WebsiteSettings() {
     if (!websiteData) return;
 
     try {
-      // For Pro plan users - create portal session
+      const type = websiteData.type?.toLowerCase() || "";
+
+      if (type === "shopify") {
+        // Extract store name from domain - handle both myshopify.com and custom domains
+        const storeName = websiteData.domain
+          .replace(/^https?:\/\//, "") // Remove http:// or https://
+          .split(".")[0]; // Get the first part of the domain
+
+        // Redirect to Shopify admin pricing page
+        const shopifyPricingUrl = `https://admin.shopify.com/store/${storeName}/apps/voicero-app-shop/app/pricing`;
+        window.open(shopifyPricingUrl, "_blank");
+        return;
+      }
+
+      // Original logic for non-Shopify websites
       if (websiteData.plan === "Pro") {
         const response = await fetch("/api/stripe/portal", {
           method: "POST",
@@ -239,7 +253,6 @@ export default function WebsiteSettings() {
 
         window.location.href = data.url;
       } else {
-        // For Free plan users - show upgrade modal
         setShowSubscriptionModal(true);
       }
     } catch (error) {

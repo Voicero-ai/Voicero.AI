@@ -240,6 +240,53 @@ Vendor: ${metadata.vendor}`;
       },
     });
 
+    // Find existing thread first
+    const existingThread = await prisma.aiThread.findFirst({
+      where: { threadId: openAiThread.id },
+    });
+
+    // Then upsert using id
+    const aiThread = await prisma.aiThread.upsert({
+      where: {
+        id: existingThread?.id || "new",
+      },
+      create: {
+        id: existingThread?.id || undefined,
+        threadId: openAiThread.id,
+        websiteId: website.id,
+        messages: {
+          create: [
+            {
+              role: "user",
+              content: message,
+              type: type || "text",
+            },
+            {
+              role: "assistant",
+              content: aiResponse,
+              type: "text",
+            },
+          ],
+        },
+      },
+      update: {
+        messages: {
+          create: [
+            {
+              role: "user",
+              content: message,
+              type: type || "text",
+            },
+            {
+              role: "assistant",
+              content: aiResponse,
+              type: "text",
+            },
+          ],
+        },
+      },
+    });
+
     return cors(
       request,
       NextResponse.json({
