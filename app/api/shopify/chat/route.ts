@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
         },
         select: {
           id: true,
+          url: true,
           aiAssistantId: true,
           aiVoiceAssistantId: true,
           monthlyQueries: true,
@@ -133,7 +134,10 @@ export async function POST(request: NextRequest) {
     const searchResults = await vectorStore.similaritySearch(message, 2);
 
     // Build context message
-    const contextMessage = `Current URL: ${url}
+    const contextMessage = `
+    Base website URL: ${website.url}
+    Current URL: ${url}
+    This info is important to the conversation if the user is on a specific collection page /collection/[collection-page] then use your understanding of filtering stores if necessary.
 ${pageContent ? "Current page content: " + pageContent : ""}
 
 Relevant content:
@@ -145,11 +149,16 @@ ${searchResults
 Description: ${metadata.description}
 Price: ${JSON.parse(metadata.variants)[0].price}
 Handle: ${metadata.handle}
-
+URL: ${website.url}/products/${metadata.handle}
 Type: ${metadata.productType}
 Vendor: ${metadata.vendor}`;
     }
-    return `${metadata.type || "Content"}: ${doc.pageContent}`;
+    return `${metadata.type || "Content"}: ${doc.pageContent}
+${
+  metadata.handle
+    ? `URL: ${website.url}/${metadata.type}s/${metadata.handle}`
+    : ""
+}`;
   })
   .join("\n---\n")}`;
 
@@ -174,9 +183,8 @@ Vendor: ${metadata.vendor}`;
     // Add the current message with context
     await openai.beta.threads.messages.create(openAiThread.id, {
       role: "user",
-      content: `${contextMessage}\n\nUser query: ${
-        type === "voice" ? "[Voice] " : ""
-      }${message}`,
+      content: `${contextMessage} 
+        ${message}`,
     });
 
     // Start the run with the appropriate assistant
@@ -195,7 +203,20 @@ Vendor: ${metadata.vendor}`;
 
     const run = await openai.beta.threads.runs.create(openAiThread.id, {
       assistant_id: assistantId,
-      instructions: `Use the provided context to answer the user's question about the Shopify store.`,
+      instructions: `Use the provided context to answer the user's question about the Shopify store. 
+      When referring to products, pages, or blog posts, always use the complete URL by combining the base website URL with the appropriate handle (e.g. baseUrl/products/handle).
+      ${
+        url.includes("/collection/")
+          ? `If the user is on a collection page, use your understanding of filtering stores to answer the question.
+          Current URL: ${url}`
+          : ""
+      }
+      ${
+        type === "voice"
+          ? `Make your answers concise and 2 sentences long 10-25 words max`
+          : "Make your answers concise and 3-4 sentences long 20-40 words max. Always include complete URLs when referring to specific pages or products."
+      }
+      `,
     });
 
     // Wait for completion
