@@ -80,7 +80,6 @@ export async function POST(request: NextRequest) {
         queryLimit: queryLimit,
         monthlyQueries: monthlyQueries,
         renewsOn: renewsOn ? new Date(renewsOn) : null,
-        lastSyncedAt: lastSyncedAt ? new Date(lastSyncedAt) : null,
         syncFrequency: syncFrequency,
         // Handle pop-up questions update
         popUpQuestions: {
