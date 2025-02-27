@@ -6,6 +6,11 @@ import { PineconeStore } from "@langchain/pinecone";
 import { OpenAI } from "openai";
 import { pinecone } from "@/lib/pinecone";
 
+// Configure for long-running requests
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 300; // 5 minutes
+
 const prisma = new PrismaClient();
 const openai = new OpenAI();
 
@@ -15,6 +20,11 @@ export async function OPTIONS(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Create a TransformStream for streaming
+  const encoder = new TextEncoder();
+  const stream = new TransformStream();
+  const writer = stream.writable.getWriter();
+
   try {
     console.log("🚀 Shopify chat request received");
 
@@ -308,22 +318,45 @@ ${
       },
     });
 
+    // After getting the AI response and updating the database, stream the response
+    const responseData = {
+      response: aiResponse,
+      relevantContent: searchResults,
+      threadId: openAiThread.id,
+    };
+
+    await writer.write(encoder.encode(JSON.stringify(responseData)));
+    await writer.close();
+
     return cors(
       request,
-      NextResponse.json({
-        response: aiResponse,
-        relevantContent: searchResults,
-        threadId: openAiThread.id,
+      new NextResponse(stream.readable, {
+        headers: {
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          Connection: "keep-alive",
+        },
       })
     );
   } catch (error) {
     console.error("❌ Shopify chat error:", error);
+    await writer.write(
+      encoder.encode(
+        JSON.stringify({ error: "Failed to process chat request" })
+      )
+    );
+    await writer.close();
+
     return cors(
       request,
-      NextResponse.json(
-        { error: "Failed to process chat request" },
-        { status: 500 }
-      )
+      new NextResponse(stream.readable, {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          Connection: "keep-alive",
+        },
+      })
     );
   }
 }
