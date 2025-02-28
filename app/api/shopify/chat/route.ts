@@ -20,10 +20,8 @@ export async function OPTIONS(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  // Create a TransformStream for streaming
-  const encoder = new TextEncoder();
-  const stream = new TransformStream();
-  const writer = stream.writable.getWriter();
+  // Track the thread ID for error handling
+  let openAiThreadId: string | undefined;
 
   try {
     console.log("🚀 Shopify chat request received");
@@ -31,6 +29,7 @@ export async function POST(request: NextRequest) {
     // Get the authorization header
     const authHeader = request.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
+      console.log("❌ Missing or invalid authorization header");
       return cors(
         request,
         NextResponse.json(
@@ -43,13 +42,16 @@ export async function POST(request: NextRequest) {
     // Extract the access key
     const accessKey = authHeader.split(" ")[1];
     if (!accessKey) {
+      console.log("❌ No access key provided");
       return cors(
         request,
         NextResponse.json({ error: "No access key provided" }, { status: 401 })
       );
     }
+    console.log("✅ Access key extracted");
 
     // Get request body and website lookup with vector config
+    console.log("📥 Getting request body and website data...");
     const [
       { message, url, type, source, threadId: incomingThreadId, chatHistory },
       website,
@@ -75,6 +77,10 @@ export async function POST(request: NextRequest) {
         },
       }),
     ]);
+    console.log(
+      `✅ Request data received, message: "${message?.substring(0, 30)}..."`
+    );
+    console.log(`✅ Website found: ${!!website}, URL: ${website?.url}`);
 
     if (!website) {
       return cors(
@@ -130,6 +136,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize embeddings and vector store
+    console.log("🔍 Initializing embeddings and vector store...");
     const embeddings = new OpenAIEmbeddings({
       modelName: "text-embedding-3-large",
     });
@@ -139,9 +146,12 @@ export async function POST(request: NextRequest) {
       pineconeIndex: index,
       namespace: website.VectorDbConfig?.namespace || website.id,
     });
+    console.log("✅ Vector store initialized");
 
     // Get relevant content from vector store
+    console.log("🔍 Searching for relevant content...");
     const searchResults = await vectorStore.similaritySearch(message, 2);
+    console.log(`✅ Found ${searchResults.length} relevant content items`);
 
     // Build context message
     const contextMessage = `
@@ -173,9 +183,18 @@ ${
   .join("\n---\n")}`;
 
     // Use existing thread or create new one
+    console.log(
+      `🧵 ${
+        incomingThreadId ? "Using existing thread" : "Creating new thread"
+      }...`
+    );
     const openAiThread = incomingThreadId
       ? { id: incomingThreadId }
       : await openai.beta.threads.create();
+    console.log(`✅ Thread ID: ${openAiThread.id}`);
+
+    // Store thread ID for use in catch block if needed
+    openAiThreadId = openAiThread.id;
 
     // If there's chat history, add previous messages first
     if (chatHistory?.length > 0) {
@@ -198,6 +217,7 @@ ${
     });
 
     // Start the run with the appropriate assistant
+    console.log("🤖 Starting OpenAI assistant run...");
     const assistantId =
       type === "voice" ? website.aiVoiceAssistantId : website.aiAssistantId;
 
@@ -211,6 +231,7 @@ ${
       );
     }
 
+    console.log(`🚀 Creating OpenAI run with assistant ID: ${assistantId}...`);
     const run = await openai.beta.threads.runs.create(openAiThread.id, {
       assistant_id: assistantId,
       instructions: `Use the provided context to answer the user's question about the Shopify store. 
@@ -228,26 +249,51 @@ ${
       }
       `,
     });
+    console.log(`✅ Run created with ID: ${run.id}`);
 
     // Wait for completion
+    console.log("⏳ Waiting for OpenAI response...");
     let runStatus = await openai.beta.threads.runs.retrieve(
       openAiThread.id,
       run.id
     );
+    console.log(`📊 Initial run status: ${runStatus.status}`);
+
+    // Add timeout mechanism
+    const MAX_POLLING_TIME = 120000; // 2 minutes max wait time
+    const startTime = Date.now();
+    let pollCount = 0;
 
     while (runStatus.status !== "completed") {
+      pollCount++;
+      console.log(`📊 Run status (poll #${pollCount}): ${runStatus.status}`);
+
+      // Check if we've exceeded the maximum polling time
+      if (Date.now() - startTime > MAX_POLLING_TIME) {
+        throw new Error("Request timed out waiting for OpenAI response");
+      }
+
       if (runStatus.status === "failed") {
         throw new Error("Assistant run failed");
       }
+
+      if (["expired", "cancelled"].includes(runStatus.status)) {
+        throw new Error(`Run ${runStatus.status}`);
+      }
+
+      // Wait before checking again
       await new Promise((resolve) => setTimeout(resolve, 1000));
       runStatus = await openai.beta.threads.runs.retrieve(
         openAiThread.id,
         run.id
       );
     }
+    console.log("✅ OpenAI run completed");
 
     // Get the response
+    console.log("📥 Retrieving assistant messages...");
     const messages = await openai.beta.threads.messages.list(openAiThread.id);
+    console.log(`✅ Retrieved ${messages.data.length} messages`);
     const lastMessage = messages.data[0];
 
     // Get just the text content
@@ -262,6 +308,7 @@ ${
         : "";
 
     // Increment query counter
+    console.log("📊 Updating query counter...");
     await prisma.website.update({
       where: { id: website.id },
       data: {
@@ -270,6 +317,7 @@ ${
         },
       },
     });
+    console.log("✅ Query counter updated");
 
     // Find existing thread first
     const existingThread = await prisma.aiThread.findFirst({
@@ -319,44 +367,46 @@ ${
     });
 
     // After getting the AI response and updating the database, stream the response
+    console.log("📤 Sending final response to client...");
     const responseData = {
       response: aiResponse,
       relevantContent: searchResults,
       threadId: openAiThread.id,
+      status: "completed", // Add status flag for client
     };
 
-    await writer.write(encoder.encode(JSON.stringify(responseData)));
-    await writer.close();
-
+    // Send a final non-streamed response rather than complex streaming
     return cors(
       request,
-      new NextResponse(stream.readable, {
+      NextResponse.json(responseData, {
+        status: 200,
         headers: {
           "Content-Type": "application/json",
-          "Transfer-Encoding": "chunked",
-          Connection: "keep-alive",
         },
       })
     );
   } catch (error) {
     console.error("❌ Shopify chat error:", error);
-    await writer.write(
-      encoder.encode(
-        JSON.stringify({ error: "Failed to process chat request" })
-      )
-    );
-    await writer.close();
+
+    // Return a simple error response instead of trying to use the stream
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to process chat request";
 
     return cors(
       request,
-      new NextResponse(stream.readable, {
-        status: 500,
-        headers: {
-          "Content-Type": "application/json",
-          "Transfer-Encoding": "chunked",
-          Connection: "keep-alive",
+      NextResponse.json(
+        {
+          error: errorMessage,
+          status: "error",
+          threadId: openAiThreadId,
         },
-      })
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      )
     );
   }
 }

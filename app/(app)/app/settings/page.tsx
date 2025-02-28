@@ -250,8 +250,17 @@ export default function Settings() {
       setError(""); // Clear any previous errors
 
       // Get presigned URL
-      const response = await fetch("/api/upload/s3-url");
-      if (!response.ok) throw new Error("Failed to get upload URL");
+      const response = await fetch("/api/upload/s3-url", {
+        headers: {
+          "Content-Type": file.type,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to get upload URL");
+      }
+
       const { uploadUrl, key, bucketUrl } = await response.json();
 
       // Upload to S3
@@ -261,9 +270,14 @@ export default function Settings() {
         headers: {
           "Content-Type": file.type,
         },
+        mode: "cors", // Explicitly set CORS mode
       });
 
-      if (!uploadResponse.ok) throw new Error("Failed to upload image");
+      if (!uploadResponse.ok) {
+        throw new Error(
+          `Failed to upload image: ${uploadResponse.status} ${uploadResponse.statusText}`
+        );
+      }
 
       // Update user profile with new image URL
       const imageUrl = `${bucketUrl}/${key}`;
@@ -295,7 +309,9 @@ export default function Settings() {
     } catch (error) {
       console.error("Upload error:", error);
       setError(
-        error instanceof Error ? error.message : "Failed to upload image"
+        error instanceof Error
+          ? `Error: ${error.message}`
+          : "Failed to upload image. Please try again later."
       );
     } finally {
       setIsUploading(false);

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -14,8 +14,9 @@ interface FormData {
   password: string;
 }
 
-export default function Login() {
+const LoginPage = () => {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState<FormData>({
@@ -37,20 +38,18 @@ export default function Login() {
     try {
       const params = new URLSearchParams(searchParams);
       const callbackUrl = params.get("callbackUrl");
+      const redirectUrl = callbackUrl || "/app";
 
       const result = await signIn("credentials", {
         login: formData.login,
         password: formData.password,
-        callbackUrl: callbackUrl || "/app",
-        redirect: false,
+        redirect: true,
+        callbackUrl: redirectUrl,
       });
 
-      if (result?.error) {
-        setError(result.error);
-      } else {
-        router.push(callbackUrl || "/app");
-      }
+      // Redirect will be handled by NextAuth and your middleware
     } catch (error) {
+      console.error("Login error:", error);
       setError("An error occurred during sign in");
     } finally {
       setIsLoading(false);
@@ -194,4 +193,6 @@ export default function Login() {
       <Footer />
     </main>
   );
-}
+};
+
+export default LoginPage;
