@@ -13,6 +13,7 @@ interface Token extends JWT {
 }
 
 export const authOptions: AuthOptions = {
+
   providers: [
     CredentialsProvider({
       name: "Credentials",
