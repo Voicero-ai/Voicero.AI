@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { cors } from "@/lib/cors";
+import { cors } from "../../../lib/cors";
 import { NextRequest } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { Buffer } from "buffer";
+
+export const dynamic = "force-dynamic";
 
 // Add debug logging for environment variables
 console.log("Environment check:", {

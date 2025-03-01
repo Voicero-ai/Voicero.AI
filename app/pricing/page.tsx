@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import Pricing from "@/components/Pricing";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+import Pricing from "../../components/Pricing";
 
 export default function PricingPage() {
   return (
@@ -15,4 +15,4 @@ export default function PricingPage() {
       <Footer />
     </main>
   );
-} 
+}

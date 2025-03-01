@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
-import prisma from "@/lib/prisma";
+import prisma from "../../../../lib/prisma";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
 // Validation schema
 const registerSchema = z.object({
   username: z

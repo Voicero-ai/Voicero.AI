@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../../../lib/prisma";
-import { cors } from "@/lib/cors";
+import { cors } from "../../../../lib/cors";
+
+export const dynamic = "force-dynamic";
 
 export async function OPTIONS(request: NextRequest) {
   return cors(request, new NextResponse(null, { status: 204 }));

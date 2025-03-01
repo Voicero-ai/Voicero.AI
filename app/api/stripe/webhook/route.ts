@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { stripe } from "@/lib/stripe";
-import prisma from "@/lib/prisma";
-
+import { stripe } from "../../../../lib/stripe";
+import prisma from "../../../../lib/prisma";
+export const dynamic = "force-dynamic";
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 // Add route configuration

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { cors } from "@/lib/cors";
+import { cors } from "../../../../lib/cors";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { PineconeStore } from "@langchain/pinecone";
 import { OpenAI } from "openai";
-import { pinecone } from "@/lib/pinecone";
+import { pinecone } from "../../../../lib/pinecone";
+
 
 // Configure for long-running requests
 export const runtime = "nodejs";

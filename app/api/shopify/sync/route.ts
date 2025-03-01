@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { cors } from "@/lib/cors";
+import prisma from "../../../../lib/prisma";
+import { cors } from "../../../../lib/cors";
 import { PrismaClient, Prisma } from "@prisma/client";
-
+export const dynamic = "force-dynamic";
 const prismaWithPool = new PrismaClient({
   datasources: {
     db: {

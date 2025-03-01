@@ -3,6 +3,8 @@ import { PrismaClient } from "@prisma/client";
 import { Pinecone } from "@pinecone-database/pinecone";
 import { OpenAIEmbeddings } from "@langchain/openai";
 
+export const dynamic = "force-dynamic";
+
 const prisma = new PrismaClient();
 const pinecone = new Pinecone({
   apiKey: process.env.PINECONE_API_KEY!,

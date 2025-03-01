@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { FaEnvelope, FaPhone, FaMapMarkerAlt } from 'react-icons/fa';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { FaEnvelope, FaPhone, FaMapMarkerAlt } from "react-icons/fa";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 
 export default function Contact() {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    company: '',
-    message: ''
+    name: "",
+    email: "",
+    company: "",
+    message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -19,17 +19,17 @@ export default function Contact() {
     e.preventDefault();
     setIsSubmitting(true);
     // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     setIsSubmitting(false);
     // Reset form
-    setFormData({ name: '', email: '', company: '', message: '' });
-    alert('Thank you for your message! We will get back to you soon.');
+    setFormData({ name: "", email: "", company: "", message: "" });
+    alert("Thank you for your message! We will get back to you soon.");
   };
 
   return (
     <main className="flex min-h-screen flex-col">
       <Navbar />
-      
+
       <section className="flex-1 pt-24 pb-16 bg-gradient-to-b from-brand-lavender-light/20 to-white">
         <div className="container mx-auto px-4">
           <motion.div
@@ -41,14 +41,19 @@ export default function Contact() {
               Get in Touch
             </h1>
             <p className="text-lg text-brand-text-secondary text-center mb-12">
-              Ready to transform your website with AI-powered voice navigation? We&apos;d love to hear from you.
+              Ready to transform your website with AI-powered voice navigation?
+              We&apos;d love to hear from you.
             </p>
 
             <div className="grid md:grid-cols-3 gap-8 mb-12">
               {[
                 { icon: FaEnvelope, title: "Email", info: "info@voicero.ai" },
                 { icon: FaPhone, title: "Phone", info: "+1 (720) 612-2979" },
-                { icon: FaMapMarkerAlt, title: "Location", info: "Phoenix, AZ" }
+                {
+                  icon: FaMapMarkerAlt,
+                  title: "Location",
+                  info: "Phoenix, AZ",
+                },
               ].map((item, index) => (
                 <motion.div
                   key={item.title}
@@ -58,7 +63,9 @@ export default function Contact() {
                   className="text-center p-6 rounded-xl bg-white shadow-sm border border-brand-lavender-light/20"
                 >
                   <item.icon className="w-6 h-6 text-brand-accent mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-brand-text-primary mb-2">{item.title}</h3>
+                  <h3 className="text-lg font-medium text-brand-text-primary mb-2">
+                    {item.title}
+                  </h3>
                   <p className="text-brand-text-secondary">{item.info}</p>
                 </motion.div>
               ))}
@@ -80,7 +87,12 @@ export default function Contact() {
                       type="text"
                       required
                       value={formData.name}
-                      onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          name: e.target.value,
+                        }))
+                      }
                       className="w-full px-4 py-2 rounded-lg border border-brand-lavender-light/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/20 bg-gray-100"
                     />
                   </div>
@@ -92,7 +104,12 @@ export default function Contact() {
                       type="email"
                       required
                       value={formData.email}
-                      onChange={e => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          email: e.target.value,
+                        }))
+                      }
                       className="w-full px-4 py-2 rounded-lg border border-brand-lavender-light/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/20 bg-gray-100"
                     />
                   </div>
@@ -104,7 +121,12 @@ export default function Contact() {
                   <input
                     type="text"
                     value={formData.company}
-                    onChange={e => setFormData(prev => ({ ...prev, company: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        company: e.target.value,
+                      }))
+                    }
                     className="w-full px-4 py-2 rounded-lg border border-brand-lavender-light/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/20 bg-gray-100"
                   />
                 </div>
@@ -116,7 +138,12 @@ export default function Contact() {
                     required
                     rows={4}
                     value={formData.message}
-                    onChange={e => setFormData(prev => ({ ...prev, message: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        message: e.target.value,
+                      }))
+                    }
                     className="w-full px-4 py-2 rounded-lg border border-brand-lavender-light/20 focus:outline-none focus:ring-2 focus:ring-brand-accent/20 bg-gray-100"
                   />
                 </div>
@@ -127,7 +154,7 @@ export default function Contact() {
                   disabled={isSubmitting}
                   className="w-full btn-primary"
                 >
-                  {isSubmitting ? 'Sending...' : 'Send Message'}
+                  {isSubmitting ? "Sending..." : "Send Message"}
                 </motion.button>
               </form>
             </motion.div>
@@ -138,4 +165,4 @@ export default function Contact() {
       <Footer />
     </main>
   );
-} 
+}

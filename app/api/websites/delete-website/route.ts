@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
+export const dynamic = "force-dynamic";
+
 const prisma = new PrismaClient();
 
 // Get the base URL from environment variable or default to localhost

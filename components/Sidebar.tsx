@@ -17,8 +17,7 @@ import {
   FaUserCircle,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
-import { useUser } from "@/contexts/UserContext";
-
+import { useUser } from "../contexts/UserContext";
 
 const menuItems = [
   { name: "Dashboard", icon: FaChartBar, path: "/app" },

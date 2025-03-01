@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import prisma from "@/lib/prisma";
-import { authOptions } from "@/lib/auth";
+import prisma from "../../../../lib/prisma";
+import { authOptions } from "../../../../lib/auth";
 import { z } from "zod";
+
+export const dynamic = "force-dynamic";
 
 const createWebsiteSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),

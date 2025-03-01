@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { Pinecone } from "@pinecone-database/pinecone";
 import { OpenAIEmbeddings } from "@langchain/openai";
-import { cors } from "@/lib/cors";
-
+import { cors } from "../../../../lib/cors";
+export const dynamic = "force-dynamic";
 const prisma = new PrismaClient();
 const pinecone = new Pinecone({
   apiKey: process.env.PINECONE_API_KEY!,

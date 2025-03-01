@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../../../lib/prisma"; // Adjust this path as needed
 
+export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   try {
     // 1) Extract the 'id' query param => e.g. /api/website/get?id=<websiteId>

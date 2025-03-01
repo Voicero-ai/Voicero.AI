@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth/next";
 import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
-import prisma from "@/lib/prisma";
+import prisma from "../lib/prisma";
 import { JWT } from "next-auth/jwt";
 
 interface Token extends JWT {

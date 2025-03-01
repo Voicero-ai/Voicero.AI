@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { cors } from "@/lib/cors";
+import { cors } from "../../../lib/cors";
 import { NextRequest } from "next/server";
 import { PrismaClient } from "@prisma/client";
-
+export const dynamic = "force-dynamic";
 const prisma = new PrismaClient();
 
 // ElevenLabs API configuration
