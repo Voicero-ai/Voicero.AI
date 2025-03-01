@@ -7,15 +7,6 @@ const nextConfig = {
       bodySizeLimit: "10mb",
     },
   },
-  // Increase API timeout
-  api: {
-    responseLimit: false,
-    bodyParser: {
-      sizeLimit: "10mb",
-    },
-    // Increase timeout for API routes
-    externalResolver: true,
-  },
   // Add custom headers for long requests
   async headers() {
     return [
