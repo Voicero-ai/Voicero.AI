@@ -8,26 +8,38 @@ export async function middleware(request: NextRequest) {
   const searchParams = request.nextUrl.search;
 
   try {
+    console.log("Middleware running for path:", path);
+
     const session = await getToken({
       req: request,
       secret: process.env.NEXTAUTH_SECRET,
     });
+
+    console.log("Session in middleware:", session ? "exists" : "null", path);
 
     // Auth pages that logged-in users shouldn't access
     const authPages = ["/login", "/getStarted", "/forgotPassword"];
 
     // If user is logged in and trying to access auth pages, redirect to app
     if (session && authPages.includes(path)) {
+      console.log(
+        "Logged in user trying to access auth page, redirecting to app"
+      );
       // Check if there's a callback URL with search params
       const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
       if (callbackUrl && callbackUrl.startsWith("/")) {
+        console.log("Redirecting to callback URL:", callbackUrl);
         return NextResponse.redirect(new URL(callbackUrl, request.url));
       }
+      console.log("Redirecting to /app");
       return NextResponse.redirect(new URL("/app", request.url));
     }
 
     // If user is not logged in and trying to access app routes
     if (!session && path.startsWith("/app")) {
+      console.log(
+        "Not logged in user trying to access app, redirecting to login"
+      );
       // Redirect to the login page
       const loginUrl = new URL("/login", request.url);
       // Store the original intended destination with search params
@@ -36,9 +48,11 @@ export async function middleware(request: NextRequest) {
       } else {
         loginUrl.searchParams.set("callbackUrl", path);
       }
+      console.log("Redirecting to login with callbackUrl");
       return NextResponse.redirect(loginUrl);
     }
 
+    console.log("Middleware allowing request to proceed");
     return NextResponse.next();
   } catch (error) {
     console.error("Middleware error:", error);

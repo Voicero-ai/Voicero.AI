@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic";
 const s3 = new S3Client({
   region: "us-east-2",
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+    accessKeyId: process.env.STORAGE_ACCESS_KEY_ID as string,
+    secretAccessKey: process.env.STORAGE_SECRET_ACCESS_KEY as string,
   },
 });
 

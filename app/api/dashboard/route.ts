@@ -5,6 +5,8 @@ import { NextResponse } from "next/server";
 import { subDays, startOfDay, endOfDay, isSameDay } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);

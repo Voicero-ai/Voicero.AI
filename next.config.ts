@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  serverExternalPackages: ["sharp"],
   experimental: {
-    serverComponentsExternalPackages: ["sharp"],
     serverActions: {
       bodySizeLimit: "10mb",
     },
@@ -30,7 +30,7 @@ const nextConfig = {
       },
     ];
   },
-  webpack(config: { module: { rules: { test: RegExp; use: string[]; }[]; }; }) {
+  webpack(config: { module: { rules: { test: RegExp; use: string[] }[] } }) {
     config.module.rules.push({
       test: /\.svg$/,
       use: ["@svgr/webpack"],
