@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/react";
 
 export const metadata: Metadata = {
   title: "Voicero.AI - AI-Powered Voice Navigation",
@@ -41,8 +42,12 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/logo.png" />
       </head>
-      <body className="bg-white text-brand-text-primary font-sans antialiased" suppressHydrationWarning>
+      <body
+        className="bg-white text-brand-text-primary font-sans antialiased"
+        suppressHydrationWarning
+      >
         {children}
+        <Analytics />
       </body>
     </html>
   );
