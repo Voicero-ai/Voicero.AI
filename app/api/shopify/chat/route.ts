@@ -6,7 +6,6 @@ import { PineconeStore } from "@langchain/pinecone";
 import { OpenAI } from "openai";
 import { pinecone } from "../../../../lib/pinecone";
 
-
 // Configure for long-running requests
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -166,9 +165,19 @@ ${searchResults
   .map((doc) => {
     const metadata = doc.metadata;
     if (metadata.type === "product") {
+      let priceInfo = "Price not available";
+      try {
+        const variants = JSON.parse(metadata.variants || "[]");
+        if (variants.length > 0 && variants[0].price) {
+          priceInfo = variants[0].price;
+        }
+      } catch (e) {
+        console.warn("Failed to parse variants data:", e);
+      }
+
       return `Product: ${metadata.title}
 Description: ${metadata.description}
-Price: ${JSON.parse(metadata.variants)[0].price}
+Price: ${priceInfo}
 Handle: ${metadata.handle}
 URL: ${website.url}/products/${metadata.handle}
 Type: ${metadata.productType}
