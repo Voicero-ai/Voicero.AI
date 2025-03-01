@@ -10,10 +10,23 @@ export async function middleware(request: NextRequest) {
   try {
     console.log("Middleware running for path:", path);
 
-    const session = await getToken({
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
+    // Special case: if we're already on the error page, allow it through
+    if (path.startsWith("/api/auth/error")) {
+      console.log("Already on error page, allowing through");
+      return NextResponse.next();
+    }
+
+    // Try to get the session token, with proper error handling
+    let session = null;
+    try {
+      session = await getToken({
+        req: request,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+    } catch (tokenError) {
+      console.error("Error getting token in middleware:", tokenError);
+      // Continue with session as null
+    }
 
     console.log("Session in middleware:", session ? "exists" : "null", path);
 
@@ -56,7 +69,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   } catch (error) {
     console.error("Middleware error:", error);
-    // On error, redirect to login for safety
+    // On error for API routes, just proceed (let the API handle its own errors)
+    if (path.startsWith("/api/")) {
+      console.log("Error in middleware for API route, allowing through");
+      return NextResponse.next();
+    }
+    // For non-API routes with errors, redirect to login as fallback
     return NextResponse.redirect(new URL("/login", request.url));
   }
 }
@@ -70,5 +88,8 @@ export const config = {
     "/forgotPassword",
     // App routes
     "/app/:path*",
+    // Add API routes to allow protecting them
+    "/api/user/:path*",
+    "/api/auth/:path*",
   ],
 };

@@ -43,11 +43,14 @@ const LoginPage = () => {
       const result = await signIn("credentials", {
         login: formData.login,
         password: formData.password,
-        redirect: true,
-        callbackUrl: redirectUrl,
+        redirect: false,
       });
 
-      // Redirect will be handled by NextAuth and your middleware
+      if (result?.error) {
+        setError(result.error);
+      } else if (result?.url) {
+        router.push(redirectUrl);
+      }
     } catch (error) {
       console.error("Login error:", error);
       setError("An error occurred during sign in");
