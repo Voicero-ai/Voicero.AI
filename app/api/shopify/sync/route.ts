@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import prisma from "../../../../lib/prisma";
 import { cors } from "../../../../lib/cors";
 import { PrismaClient, Prisma } from "@prisma/client";
 
@@ -6,8 +7,7 @@ export const dynamic = "force-dynamic";
 
 // If you prefer using this new prismaWithPool client, that's fine,
 // but ensure the DB URL and environment match exactly what is used
-// by the rest of your app. For clarity, here we show logs so you
-// know which DB is being used.
+// by the rest of your app.
 const prismaWithPool = new PrismaClient({
   datasources: {
     db: {
@@ -81,12 +81,16 @@ interface DiscountInput {
 }
 
 interface ShopifySyncBody {
-  products?: ShopifyProductInput[];
-  pages?: PageInput[];
-  blogs?: BlogInput[];
-  discounts?: {
-    automaticDiscounts?: DiscountInput[];
-    codeDiscounts?: DiscountInput[];
+  fullSync?: boolean;
+  data?: {
+    shop?: any;
+    products?: ShopifyProductInput[];
+    pages?: PageInput[];
+    blogs?: BlogInput[];
+    discounts?: {
+      automaticDiscounts?: DiscountInput[];
+      codeDiscounts?: DiscountInput[];
+    };
   };
 }
 
@@ -151,97 +155,108 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Now we properly grab data from body.data rather than top-level body
+    const dataBody = body.data || {};
     const {
       products = [],
       pages = [],
       blogs = [],
       discounts = { automaticDiscounts: [], codeDiscounts: [] },
-    } = body;
+    } = dataBody;
+
+    // Just in case you need to check fullSync:
+    const isFullSync = !!body.fullSync;
+    console.log("fullSync? =>", isFullSync);
 
     //----------------------------------------------------------------------
     // (A) Upsert PRODUCTS in Chunks
     //----------------------------------------------------------------------
-    const productChunks = chunkArray<ShopifyProductInput>(products, 10);
-    for (const chunk of productChunks) {
-      console.log(`Processing product chunk of size: ${chunk.length}`);
-      await prismaWithPool.$transaction(
-        async (tx) => {
-          for (const product of chunk) {
-            console.log("Upserting product =>", {
-              shopifyId: product.shopifyId,
-              title: product.title,
-            });
+    if (products.length > 0) {
+      console.log(`Processing ${products.length} total product(s)`);
+      const productChunks = chunkArray<ShopifyProductInput>(products, 10);
+      for (const chunk of productChunks) {
+        console.log(`Processing product chunk of size: ${chunk.length}`);
+        await prismaWithPool.$transaction(
+          async (tx) => {
+            for (const product of chunk) {
+              console.log("Upserting product =>", {
+                shopifyId: product.shopifyId,
+                title: product.title,
+              });
 
-            const upsertedProduct = await tx.shopifyProduct.upsert({
-              where: {
-                websiteId_shopifyId: {
+              const upsertedProduct = await tx.shopifyProduct.upsert({
+                where: {
+                  websiteId_shopifyId: {
+                    websiteId: website.id,
+                    shopifyId: BigInt(product.shopifyId),
+                  },
+                },
+                create: {
                   websiteId: website.id,
                   shopifyId: BigInt(product.shopifyId),
+                  title: product.title ?? "",
+                  handle: product.handle ?? "",
+                  vendor: product.vendor ?? "",
+                  productType: product.productType ?? "",
+                  description: product.description ?? "",
                 },
-              },
-              create: {
-                websiteId: website.id,
-                shopifyId: BigInt(product.shopifyId),
-                title: product.title ?? "",
-                handle: product.handle ?? "",
-                vendor: product.vendor ?? "",
-                productType: product.productType ?? "",
-                description: product.description ?? "",
-              },
-              update: {
-                title: product.title ?? "",
-                handle: product.handle ?? "",
-                vendor: product.vendor ?? "",
-                productType: product.productType ?? "",
-                description: product.description ?? "",
-              },
-            });
-
-            // Delete old variants/media
-            await tx.shopifyProductVariant.deleteMany({
-              where: { productId: upsertedProduct.id },
-            });
-            await tx.shopifyMedia.deleteMany({
-              where: { productId: upsertedProduct.id },
-            });
-
-            // Create new variants
-            if (Array.isArray(product.variants)) {
-              console.log(
-                `  Creating ${product.variants.length} variants for product ${product.shopifyId}`
-              );
-              await tx.shopifyProductVariant.createMany({
-                data: product.variants.map((variant) => ({
-                  productId: upsertedProduct.id,
-                  shopifyId: BigInt(variant.shopifyId),
-                  title: variant.title ?? "",
-                  price: parseFloat(String(variant.price)) || 0,
-                  sku: variant.sku ?? null,
-                  inventory: variant.inventory ?? null,
-                })),
-                skipDuplicates: true,
+                update: {
+                  title: product.title ?? "",
+                  handle: product.handle ?? "",
+                  vendor: product.vendor ?? "",
+                  productType: product.productType ?? "",
+                  description: product.description ?? "",
+                },
               });
-            }
 
-            // Create new images
-            if (Array.isArray(product.images)) {
-              console.log(
-                `  Creating ${product.images.length} images for product ${product.shopifyId}`
-              );
-              await tx.shopifyMedia.createMany({
-                data: product.images.map((img) => ({
-                  productId: upsertedProduct.id,
-                  shopifyId: BigInt(img.shopifyId),
-                  url: img.url || img.src || "",
-                  altText: img.altText || img.alt || null,
-                })),
-                skipDuplicates: true,
+              // Delete old variants/media
+              await tx.shopifyProductVariant.deleteMany({
+                where: { productId: upsertedProduct.id },
               });
+              await tx.shopifyMedia.deleteMany({
+                where: { productId: upsertedProduct.id },
+              });
+
+              // Create new variants
+              if (Array.isArray(product.variants)) {
+                console.log(
+                  `  Creating ${product.variants.length} variants for product ${product.shopifyId}`
+                );
+                await tx.shopifyProductVariant.createMany({
+                  data: product.variants.map((variant) => ({
+                    productId: upsertedProduct.id,
+                    shopifyId: BigInt(variant.shopifyId),
+                    title: variant.title ?? "",
+                    price: parseFloat(String(variant.price)) || 0,
+                    sku: variant.sku ?? null,
+                    inventory: variant.inventory ?? null,
+                  })),
+                  skipDuplicates: true,
+                });
+              }
+
+              // Create new images
+              if (Array.isArray(product.images)) {
+                console.log(
+                  `  Creating ${product.images.length} images for product ${product.shopifyId}`
+                );
+                await tx.shopifyMedia.createMany({
+                  data: product.images.map((img) => ({
+                    productId: upsertedProduct.id,
+                    shopifyId: BigInt(img.shopifyId),
+                    url: img.url || img.src || "",
+                    altText: img.altText || img.alt || null,
+                  })),
+                  skipDuplicates: true,
+                });
+              }
             }
-          }
-        },
-        { timeout: 30000 }
-      );
+          },
+          { timeout: 30000 }
+        );
+      }
+    } else {
+      console.log("No products to upsert.");
     }
 
     //----------------------------------------------------------------------
@@ -317,6 +332,8 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+    } else {
+      console.log("No pages to upsert.");
     }
 
     //----------------------------------------------------------------------
@@ -464,17 +481,20 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+    } else {
+      console.log("No blogs to upsert.");
     }
 
     //----------------------------------------------------------------------
     // (D) Upsert Discounts
     //----------------------------------------------------------------------
     const { automaticDiscounts = [], codeDiscounts = [] } = discounts;
-    if (automaticDiscounts.length > 0 || codeDiscounts.length > 0) {
-      const allDiscounts = [
-        ...automaticDiscounts.map((d) => ({ ...d, type: "automatic" })),
-        ...codeDiscounts.map((d) => ({ ...d, type: "code" })),
-      ];
+    const allDiscounts = [
+      ...(automaticDiscounts || []).map((d) => ({ ...d, type: "automatic" })),
+      ...(codeDiscounts || []).map((d) => ({ ...d, type: "code" })),
+    ];
+
+    if (allDiscounts.length > 0) {
       console.log(`Processing ${allDiscounts.length} discount(s)`);
       for (const discount of allDiscounts) {
         console.log("Upserting discount =>", {
@@ -550,6 +570,8 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+    } else {
+      console.log("No discounts to upsert.");
     }
 
     //----------------------------------------------------------------------
