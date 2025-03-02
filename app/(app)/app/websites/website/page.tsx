@@ -106,7 +106,7 @@ function countWords(str: string): number {
 }
 
 export default function WebsiteSettings() {
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams()!;
   const websiteId = searchParams.get("id");
 
   const [websiteData, setWebsiteData] = useState<WebsiteData | null>(null);

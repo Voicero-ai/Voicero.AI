@@ -1,8 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-1.0.x"]
 }
-
 
 datasource db {
   provider     = "mysql"
@@ -20,45 +18,39 @@ model User {
   emailCode        String?
   emailVerified    Boolean          @default(false)
   profilePicture   String?
+  stripeCustomerId String?          @unique
   websites         Website[]
   verifiedDevices  VerifiedDevice[]
-  stripeCustomerId String?          @unique
 }
 
 model Website {
-  id                 String          @id @default(uuid())
-  url                String
-  name               String?
-  userId             String
-  type               String
-  createdAt          DateTime        @default(now())
-  renewsOn           DateTime?
-  plan               String
-  stripeId           String?         @unique
-  active             Boolean         @default(false)
-  syncFrequency      String          @default("daily")
-  lastSyncedAt       DateTime?
-  monthlyQueries     Int             @default(0)
-  customInstructions String?
-  popUpQuestions     PopUpQuestion[]
-  accessKeys         AccessKey[]
-  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  queryLimit         Int             @default(10000)
-
-  // WordPress
-  posts    WordpressPost[]
-  pages    WordpressPage[]
-  products WordpressProduct[]
-
-  // Shopify
-  shopifyPages    ShopifyPage[]
-  shopifyBlog     ShopifyBlog[]
-  shopifyProducts ShopifyProduct[]
-  ShopifyDiscount ShopifyDiscount[]
-
-  // ...
+  id                       String                     @id @default(uuid())
+  url                      String
+  name                     String?
+  userId                   String
+  type                     String
+  createdAt                DateTime                   @default(now())
+  renewsOn                 DateTime?
+  plan                     String
+  stripeId                 String?                    @unique
+  active                   Boolean                    @default(false)
+  syncFrequency            String                     @default("daily")
+  lastSyncedAt             DateTime?
+  monthlyQueries           Int                        @default(0)
+  queryLimit               Int                        @default(10000)
   aiAssistantId            String?
   aiVoiceAssistantId       String?
+  customInstructions       String?
+  popUpQuestions           PopUpQuestion[]
+  accessKeys               AccessKey[]
+  user                     User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posts                    WordpressPost[]
+  pages                    WordpressPage[]
+  products                 WordpressProduct[]
+  shopifyPages             ShopifyPage[]
+  shopifyBlog              ShopifyBlog[]
+  shopifyProducts          ShopifyProduct[]
+  ShopifyDiscount          ShopifyDiscount[]
   aiThreads                AiThread[]
   WordpressCategory        WordpressCategory[]
   WordpressMedia           WordpressMedia[]
@@ -102,29 +94,28 @@ model VerifiedDevice {
   @@index([userId])
 }
 
-/**
- * ---------------------------------------------------------------------------
- * WordPress Models (unchanged)
- * ----------------------------------------------------------------------------
- */
+/// *
+///  * ---------------------------------------------------------------------------
+///  * WordPress Models (unchanged)
+///  * ----------------------------------------------------------------------------
 model WordpressPost {
   id           Int                    @id @default(autoincrement())
   wpId         Int                    @unique
   title        String
+  slug         String
   content      String                 @db.Text
   excerpt      String?                @db.Text
-  slug         String
   link         String
   authorId     Int?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  websiteId    String
   author       WordpressAuthor?       @relation(fields: [authorId], references: [wpId])
   categories   WordpressCategory[]
   tags         WordpressTag[]
   comments     WordpressComment[]
-  createdAt    DateTime               @default(now())
-  updatedAt    DateTime               @updatedAt
   customFields WordpressCustomField[]
   website      Website                @relation(fields: [websiteId], references: [id])
-  websiteId    String
 
   @@unique([slug, websiteId])
   @@index([websiteId])
@@ -134,13 +125,13 @@ model WordpressPage {
   id        Int      @id @default(autoincrement())
   wpId      Int      @unique
   title     String
-  content   String   @db.Text
   slug      String
+  content   String   @db.Text
   link      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  website   Website  @relation(fields: [websiteId], references: [id])
   websiteId String
+  website   Website  @relation(fields: [websiteId], references: [id])
 
   @@unique([slug, websiteId])
   @@index([websiteId])
@@ -152,20 +143,20 @@ model WordpressProduct {
   name             String
   slug             String
   permalink        String
-  description      String                     @db.Text
-  shortDescription String?                    @db.Text
   price            Float
   regularPrice     Float?
   salePrice        Float?
   stockQuantity    Int?
+  description      String                     @db.Text
+  shortDescription String?                    @db.Text
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+  websiteId        String
   categories       WordpressProductCategory[]
   tags             WordpressProductTag[]
   reviews          WordpressReview[]
-  createdAt        DateTime                   @default(now())
-  updatedAt        DateTime                   @updatedAt
   customFields     WordpressCustomField[]
   website          Website                    @relation(fields: [websiteId], references: [id])
-  websiteId        String
 
   @@unique([slug, websiteId])
   @@index([websiteId])
@@ -175,16 +166,16 @@ model WordpressMedia {
   id          Int      @id @default(autoincrement())
   wpId        Int      @unique
   title       String?
-  url         String
-  alt         String?
-  description String?  @db.Text
   caption     String?
-  mimeType    String?
-  metadata    Json?
+  alt         String?
   createdAt   DateTime
+  description String?  @db.Text
+  metadata    Json?
+  mimeType    String?
   updatedAt   DateTime
-  website     Website  @relation(fields: [websiteId], references: [id])
+  url         String
   websiteId   String
+  website     Website  @relation(fields: [websiteId], references: [id])
 
   @@index([websiteId])
 }
@@ -193,15 +184,15 @@ model WordpressAuthor {
   id        Int             @id @default(autoincrement())
   wpId      Int             @unique
   name      String
-  email     String?
-  url       String?
-  bio       String?         @db.Text
   avatarUrl String?
-  posts     WordpressPost[]
+  bio       String?         @db.Text
   createdAt DateTime
   updatedAt DateTime
-  website   Website         @relation(fields: [websiteId], references: [id])
+  url       String?
   websiteId String
+  email     String?
+  posts     WordpressPost[]
+  website   Website         @relation(fields: [websiteId], references: [id])
 
   @@index([websiteId])
 }
@@ -212,11 +203,11 @@ model WordpressCategory {
   name        String
   slug        String
   description String?         @db.Text
-  posts       WordpressPost[]
-  website     Website         @relation(fields: [websiteId], references: [id])
   websiteId   String
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @default(now()) @updatedAt
+  posts       WordpressPost[]
+  website     Website         @relation(fields: [websiteId], references: [id])
 
   @@unique([slug, websiteId])
   @@index([websiteId])
@@ -227,11 +218,11 @@ model WordpressTag {
   wpId      Int             @unique
   name      String
   slug      String
-  posts     WordpressPost[]
-  website   Website         @relation(fields: [websiteId], references: [id])
-  websiteId String
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
+  websiteId String
+  posts     WordpressPost[]
+  website   Website         @relation(fields: [websiteId], references: [id])
 
   @@unique([slug, websiteId])
   @@index([websiteId])
@@ -242,15 +233,15 @@ model WordpressProductCategory {
   wpId        Int                @unique
   name        String
   slug        String
-  description String?            @db.Text
-  parent      Int?
   count       Int?
+  description String?            @db.Text
   imageUrl    String?
-  products    WordpressProduct[]
-  website     Website            @relation(fields: [websiteId], references: [id])
+  parent      Int?
   websiteId   String
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
+  products    WordpressProduct[]
+  website     Website            @relation(fields: [websiteId], references: [id])
 
   @@unique([slug, websiteId])
   @@index([websiteId])
@@ -261,13 +252,13 @@ model WordpressProductTag {
   wpId        Int                @unique
   name        String
   slug        String
-  description String?            @db.Text
   count       Int                @default(0)
-  products    WordpressProduct[]
-  website     Website            @relation(fields: [websiteId], references: [id])
+  description String?            @db.Text
   websiteId   String
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
+  products    WordpressProduct[]
+  website     Website            @relation(fields: [websiteId], references: [id])
 
   @@unique([slug, websiteId])
   @@index([websiteId])
@@ -276,13 +267,13 @@ model WordpressProductTag {
 model WordpressComment {
   id          Int                @id @default(autoincrement())
   wpId        Int                @unique
+  postId      Int
   authorName  String
   authorEmail String
   content     String             @db.Text
   date        DateTime
   status      String             @default("approved")
   parentId    Int?
-  postId      Int
   post        WordpressPost      @relation(fields: [postId], references: [wpId])
   parent      WordpressComment?  @relation("CommentToComment", fields: [parentId], references: [wpId], onDelete: NoAction, onUpdate: NoAction)
   children    WordpressComment[] @relation("CommentToComment")
@@ -291,13 +282,13 @@ model WordpressComment {
 model WordpressReview {
   id            Int              @id @default(autoincrement())
   wpId          Int              @unique
+  productId     Int
   reviewer      String
   reviewerEmail String
   review        String           @db.Text
   rating        Int
   date          DateTime
   verified      Boolean
-  productId     Int
   product       WordpressProduct @relation(fields: [productId], references: [wpId])
 }
 
@@ -307,39 +298,37 @@ model WordpressCustomField {
   metaKey            String
   metaValue          String            @db.Text
   postType           String
-  post               WordpressPost?    @relation(fields: [postId], references: [wpId])
-  website            Website           @relation(fields: [websiteId], references: [id])
   websiteId          String
-  WordpressProduct   WordpressProduct? @relation(fields: [wordpressProductId], references: [id])
   wordpressProductId Int?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
+  post               WordpressPost?    @relation(fields: [postId], references: [wpId])
+  website            Website           @relation(fields: [websiteId], references: [id])
+  WordpressProduct   WordpressProduct? @relation(fields: [wordpressProductId], references: [id])
 
   @@unique([postId, metaKey])
   @@index([websiteId])
 }
 
-/**
- * ---------------------------------------------------------------------------
- * Shopify Models
- * ----------------------------------------------------------------------------
- */
+/// *
+///  * ---------------------------------------------------------------------------
+///  * Shopify Models
+///  * ----------------------------------------------------------------------------
 model ShopifyProduct {
-  id          String   @id @default(uuid())
+  id          String                  @id @default(uuid())
   shopifyId   BigInt
-  websiteId   String
-  website     Website  @relation(fields: [websiteId], references: [id])
   title       String
   handle      String
   vendor      String
   productType String
-  description String   @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  images   ShopifyMedia[]
-  variants ShopifyProductVariant[]
-  reviews  ShopifyReview[]
+  description String                  @db.Text
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  websiteId   String
+  website     Website                 @relation(fields: [websiteId], references: [id])
+  images      ShopifyMedia[]
+  variants    ShopifyProductVariant[]
+  reviews     ShopifyReview[]
 
   @@unique([websiteId, shopifyId])
   @@unique([websiteId, handle])
@@ -347,38 +336,35 @@ model ShopifyProduct {
 }
 
 model ShopifyProductVariant {
-  id        String  @id @default(uuid())
-  shopifyId BigInt  @unique // Changed from Int to BigInt
+  id        String         @id @default(uuid())
+  shopifyId BigInt         @unique
   title     String
   price     Float
   sku       String?
   inventory Int?
-
   productId String
   product   ShopifyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model ShopifyMedia {
-  id        String  @id @default(uuid())
-  shopifyId BigInt  @unique // Changed from Int to BigInt
+  id        String          @id @default(uuid())
+  shopifyId BigInt          @unique
   url       String
   altText   String?
   caption   String?
-
   productId String?
   product   ShopifyProduct? @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model ShopifyReview {
-  id        String   @id @default(uuid())
-  shopifyId Int      @unique // Shopify Review ID
+  id        String         @id @default(uuid())
+  shopifyId Int            @unique
   rating    Int
   title     String
-  body      String   @db.Text
+  body      String         @db.Text
   reviewer  String
   verified  Boolean
-  createdAt DateTime @default(now())
-
+  createdAt DateTime       @default(now())
   productId String
   product   ShopifyProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
@@ -386,18 +372,18 @@ model ShopifyReview {
 model ShopifyDiscount {
   id        String    @id @default(uuid())
   shopifyId Int
-  websiteId String
-  website   Website   @relation(fields: [websiteId], references: [id])
   title     String
-  code      String? // For code discounts
-  type      String // 'automatic' or 'code'
   value     String
-  appliesTo String?
-  status    String    @default("ACTIVE")
   startsAt  DateTime
   endsAt    DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  appliesTo String?
+  code      String?
+  status    String    @default("ACTIVE")
+  type      String
+  websiteId String
+  website   Website   @relation(fields: [websiteId], references: [id])
 
   @@unique([websiteId, shopifyId])
   @@index([websiteId])
@@ -416,13 +402,13 @@ model ShopifyGiftCard {
 model ShopifyPage {
   id        String   @id @default(uuid())
   shopifyId Int
-  websiteId String
-  website   Website  @relation(fields: [websiteId], references: [id])
   title     String
   handle    String
   content   String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  websiteId String
+  website   Website  @relation(fields: [websiteId], references: [id])
 
   @@unique([websiteId, shopifyId])
   @@unique([websiteId, handle])
@@ -432,12 +418,12 @@ model ShopifyPage {
 model ShopifyBlog {
   id        String            @id @default(uuid())
   shopifyId Int
-  websiteId String
-  website   Website           @relation(fields: [websiteId], references: [id])
   title     String
   handle    String
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
+  websiteId String
+  website   Website           @relation(fields: [websiteId], references: [id])
   posts     ShopifyBlogPost[]
 
   @@unique([websiteId, shopifyId])
@@ -446,21 +432,20 @@ model ShopifyBlog {
 }
 
 model ShopifyBlogPost {
-  id        String   @id @default(uuid())
+  id        String           @id @default(uuid())
   shopifyId Int
-  websiteId String
-  website   Website  @relation(fields: [websiteId], references: [id])
   title     String
   handle    String
-  content   String   @db.Text
+  content   String           @db.Text
   author    String
   image     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  blogId   String
-  blog     ShopifyBlog      @relation(fields: [blogId], references: [id], onDelete: Cascade)
-  comments ShopifyComment[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  blogId    String
+  websiteId String
+  website   Website          @relation(fields: [websiteId], references: [id])
+  blog      ShopifyBlog      @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  comments  ShopifyComment[]
 
   @@unique([websiteId, shopifyId])
   @@unique([websiteId, handle])
@@ -469,31 +454,29 @@ model ShopifyBlogPost {
 }
 
 model ShopifyComment {
-  id        String   @id @default(uuid())
+  id        String          @id @default(uuid())
   shopifyId Int
-  body      String   @db.Text
+  body      String          @db.Text
   author    String
   email     String?
   status    String
-  createdAt DateTime @default(now())
-
-  postId String
-  post   ShopifyBlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+  postId    String
+  post      ShopifyBlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
 }
 
-/**
- * ---------------------------------------------------------------------------
- * AI/Vector DB
- * ----------------------------------------------------------------------------
- */
+/// *
+///  * ---------------------------------------------------------------------------
+///  * AI/Vector DB
+///  * ----------------------------------------------------------------------------
 model AiThread {
   id            String      @id @default(uuid())
   threadId      String
   websiteId     String
-  website       Website     @relation(fields: [websiteId], references: [id], onDelete: Cascade)
   title         String?
   createdAt     DateTime    @default(now())
   lastMessageAt DateTime    @default(now())
+  website       Website     @relation(fields: [websiteId], references: [id], onDelete: Cascade)
   messages      AiMessage[]
 
   @@index([websiteId])
@@ -502,13 +485,13 @@ model AiThread {
 model AiMessage {
   id           String   @id @default(uuid())
   threadId     String
-  thread       AiThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
   role         String
   content      String   @db.Text
   pageUrl      String?
-  type         String?
   scrollToText String?
   createdAt    DateTime @default(now())
+  type         String?
+  thread       AiThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
 
   @@index([threadId])
 }
@@ -516,6 +499,42 @@ model AiMessage {
 model VectorDbConfig {
   id        String  @id @default(uuid())
   namespace String
-  website   Website @relation(fields: [websiteId], references: [id])
   websiteId String  @unique
+  website   Website @relation(fields: [websiteId], references: [id])
+}
+
+model WordpressCategoryToWordpressPost {
+  A Int
+  B Int
+
+  @@unique([A, B], map: "_WordpressCategoryToWordpressPost_AB_unique")
+  @@index([B], map: "_WordpressCategoryToWordpressPost_B_index")
+  @@map("_WordpressCategoryToWordpressPost")
+}
+
+model WordpressPostToWordpressTag {
+  A Int
+  B Int
+
+  @@unique([A, B], map: "_WordpressPostToWordpressTag_AB_unique")
+  @@index([B], map: "_WordpressPostToWordpressTag_B_index")
+  @@map("_WordpressPostToWordpressTag")
+}
+
+model WordpressProductToWordpressProductCategory {
+  A Int
+  B Int
+
+  @@unique([A, B], map: "_WordpressProductToWordpressProductCategory_AB_unique")
+  @@index([B], map: "_WordpressProductToWordpressProductCategory_B_index")
+  @@map("_WordpressProductToWordpressProductCategory")
+}
+
+model WordpressProductToWordpressProductTag {
+  A Int
+  B Int
+
+  @@unique([A, B], map: "_WordpressProductToWordpressProductTag_AB_unique")
+  @@index([B], map: "_WordpressProductToWordpressProductTag_B_index")
+  @@map("_WordpressProductToWordpressProductTag")
 }

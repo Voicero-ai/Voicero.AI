@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "../../../../lib/prisma";
 import { cors } from "../../../../lib/cors";
 import { PrismaClient, Prisma } from "@prisma/client";
+
 export const dynamic = "force-dynamic";
+
+// If you prefer using this new prismaWithPool client, that's fine,
+// but ensure the DB URL and environment match exactly what is used
+// by the rest of your app. For clarity, here we show logs so you
+// know which DB is being used.
 const prismaWithPool = new PrismaClient({
   datasources: {
     db: {
@@ -91,6 +96,8 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   console.log("=== Starting Shopify Sync (All Upserts, No Full Deletes) ===");
+  console.log("DATABASE_URL in production =>", process.env.DATABASE_URL);
+
   try {
     await prismaWithPool.$connect();
     console.log("Database connection established");
@@ -108,7 +115,7 @@ export async function POST(request: NextRequest) {
     }
     const accessKey = authHeader.split(" ")[1];
 
-    // Find website
+    // Find website by access key
     const website = await prismaWithPool.website.findFirst({
       where: { accessKeys: { some: { key: accessKey } } },
     });
@@ -118,6 +125,14 @@ export async function POST(request: NextRequest) {
         NextResponse.json({ error: "Website not found" }, { status: 404 })
       );
     }
+    console.log(
+      "Website found =>",
+      website.id,
+      website.name,
+      website.url,
+      "Plan:",
+      website.plan
+    );
 
     // Parse request
     let body: ShopifySyncBody;
@@ -147,11 +162,16 @@ export async function POST(request: NextRequest) {
     // (A) Upsert PRODUCTS in Chunks
     //----------------------------------------------------------------------
     const productChunks = chunkArray<ShopifyProductInput>(products, 10);
-
     for (const chunk of productChunks) {
+      console.log(`Processing product chunk of size: ${chunk.length}`);
       await prismaWithPool.$transaction(
         async (tx) => {
           for (const product of chunk) {
+            console.log("Upserting product =>", {
+              shopifyId: product.shopifyId,
+              title: product.title,
+            });
+
             const upsertedProduct = await tx.shopifyProduct.upsert({
               where: {
                 websiteId_shopifyId: {
@@ -177,7 +197,7 @@ export async function POST(request: NextRequest) {
               },
             });
 
-            // delete old variants/media
+            // Delete old variants/media
             await tx.shopifyProductVariant.deleteMany({
               where: { productId: upsertedProduct.id },
             });
@@ -185,8 +205,11 @@ export async function POST(request: NextRequest) {
               where: { productId: upsertedProduct.id },
             });
 
-            // create new variants
+            // Create new variants
             if (Array.isArray(product.variants)) {
+              console.log(
+                `  Creating ${product.variants.length} variants for product ${product.shopifyId}`
+              );
               await tx.shopifyProductVariant.createMany({
                 data: product.variants.map((variant) => ({
                   productId: upsertedProduct.id,
@@ -200,8 +223,11 @@ export async function POST(request: NextRequest) {
               });
             }
 
-            // create new images
+            // Create new images
             if (Array.isArray(product.images)) {
+              console.log(
+                `  Creating ${product.images.length} images for product ${product.shopifyId}`
+              );
               await tx.shopifyMedia.createMany({
                 data: product.images.map((img) => ({
                   productId: upsertedProduct.id,
@@ -219,9 +245,10 @@ export async function POST(request: NextRequest) {
     }
 
     //----------------------------------------------------------------------
-    // (B) Upsert PAGES, each in its own transaction, catching P2002
+    // (B) Upsert PAGES
     //----------------------------------------------------------------------
     if (pages.length > 0) {
+      console.log(`Processing ${pages.length} page(s)`);
       // Deduplicate by shopifyId
       const uniquePagesMap = new Map<number, PageInput>();
       for (const p of pages) {
@@ -231,11 +258,12 @@ export async function POST(request: NextRequest) {
 
       // Optionally chunk them if large
       const pageChunks = chunkArray<PageInput>(uniquePages, 10);
-
       for (const chunk of pageChunks) {
-        // Instead of a single transaction for the whole chunk,
-        // do each page in its own transaction to avoid collisions:
         for (const page of chunk) {
+          console.log("Upserting page =>", {
+            shopifyId: page.shopifyId,
+            title: page.title,
+          });
           try {
             await prismaWithPool.$transaction(
               async (tx) => {
@@ -263,7 +291,6 @@ export async function POST(request: NextRequest) {
               { timeout: 30000 }
             );
           } catch (err: any) {
-            // Catch unique constraint errors
             if (
               err instanceof Prisma.PrismaClientKnownRequestError &&
               err.code === "P2002"
@@ -273,7 +300,6 @@ export async function POST(request: NextRequest) {
                 page.shopifyId,
                 "– retrying update..."
               );
-              // Possibly do an .update() call here, or just skip
               await prismaWithPool.shopifyPage.updateMany({
                 where: {
                   websiteId: website.id,
@@ -294,9 +320,10 @@ export async function POST(request: NextRequest) {
     }
 
     //----------------------------------------------------------------------
-    // (C) Upsert BLOGS & POSTS, each blog in its own transaction
+    // (C) Upsert BLOGS & POSTS
     //----------------------------------------------------------------------
     if (blogs.length > 0) {
+      console.log(`Processing ${blogs.length} blog(s)`);
       // Deduplicate blogs by shopifyId
       const uniqueBlogsMap = new Map<number, BlogInput>();
       for (const b of blogs) {
@@ -304,8 +331,11 @@ export async function POST(request: NextRequest) {
       }
       const uniqueBlogs = Array.from(uniqueBlogsMap.values());
 
-      // Process each blog in its own transaction
       for (const blog of uniqueBlogs) {
+        console.log("Upserting blog =>", {
+          shopifyId: blog.shopifyId,
+          title: blog.title,
+        });
         try {
           await prismaWithPool.$transaction(
             async (tx) => {
@@ -330,7 +360,14 @@ export async function POST(request: NextRequest) {
 
               // Handle posts for this blog
               if (Array.isArray(blog.posts)) {
+                console.log(
+                  `  Creating or updating ${blog.posts.length} post(s) for blog ${blog.shopifyId}`
+                );
                 for (const post of blog.posts) {
+                  console.log("   Upserting blog post =>", {
+                    shopifyId: post.shopifyId,
+                    title: post.title,
+                  });
                   await tx.shopifyBlogPost.upsert({
                     where: {
                       websiteId_shopifyId: {
@@ -362,7 +399,6 @@ export async function POST(request: NextRequest) {
             { timeout: 30000 }
           );
         } catch (err: any) {
-          // Handle unique constraint errors
           if (
             err instanceof Prisma.PrismaClientKnownRequestError &&
             err.code === "P2002"
@@ -372,7 +408,6 @@ export async function POST(request: NextRequest) {
               blog.shopifyId,
               "– retrying update..."
             );
-
             // Retry with direct update
             const existingBlog = await prismaWithPool.shopifyBlog.findFirst({
               where: {
@@ -380,7 +415,6 @@ export async function POST(request: NextRequest) {
                 shopifyId: blog.shopifyId,
               },
             });
-
             if (existingBlog) {
               // Update blog
               await prismaWithPool.shopifyBlog.update({
@@ -390,10 +424,13 @@ export async function POST(request: NextRequest) {
                   title: blog.title ?? "",
                 },
               });
-
               // Update posts
               if (Array.isArray(blog.posts)) {
                 for (const post of blog.posts) {
+                  console.log("   Upserting blog post =>", {
+                    shopifyId: post.shopifyId,
+                    title: post.title,
+                  });
                   await prismaWithPool.shopifyBlogPost.upsert({
                     where: {
                       websiteId_shopifyId: {
@@ -423,7 +460,7 @@ export async function POST(request: NextRequest) {
               }
             }
           } else {
-            throw err; // rethrow other errors
+            throw err;
           }
         }
       }
@@ -432,22 +469,20 @@ export async function POST(request: NextRequest) {
     //----------------------------------------------------------------------
     // (D) Upsert Discounts
     //----------------------------------------------------------------------
-    if (
-      (discounts?.automaticDiscounts?.length ?? 0) > 0 ||
-      (discounts?.codeDiscounts?.length ?? 0) > 0
-    ) {
+    const { automaticDiscounts = [], codeDiscounts = [] } = discounts;
+    if (automaticDiscounts.length > 0 || codeDiscounts.length > 0) {
       const allDiscounts = [
-        ...(discounts?.automaticDiscounts || []).map((d) => ({
-          ...d,
-          type: "automatic",
-        })),
-        ...(discounts?.codeDiscounts || []).map((d) => ({
-          ...d,
-          type: "code",
-        })),
+        ...automaticDiscounts.map((d) => ({ ...d, type: "automatic" })),
+        ...codeDiscounts.map((d) => ({ ...d, type: "code" })),
       ];
-
+      console.log(`Processing ${allDiscounts.length} discount(s)`);
       for (const discount of allDiscounts) {
+        console.log("Upserting discount =>", {
+          shopifyId: discount.shopifyId,
+          title: discount.title,
+          code: discount.code,
+          type: discount.type,
+        });
         try {
           await prismaWithPool.$transaction(
             async (tx) => {
@@ -486,7 +521,6 @@ export async function POST(request: NextRequest) {
             { timeout: 30000 }
           );
         } catch (err: any) {
-          // Handle unique constraint errors
           if (
             err instanceof Prisma.PrismaClientKnownRequestError &&
             err.code === "P2002"
@@ -496,7 +530,6 @@ export async function POST(request: NextRequest) {
               discount.shopifyId,
               "– retrying update..."
             );
-
             await prismaWithPool.shopifyDiscount.updateMany({
               where: {
                 websiteId: website.id,
@@ -520,8 +553,9 @@ export async function POST(request: NextRequest) {
     }
 
     //----------------------------------------------------------------------
-    // (D) Update lastSyncedAt
+    // (E) Update lastSyncedAt
     //----------------------------------------------------------------------
+    console.log("Updating lastSyncedAt for website:", website.id);
     await prismaWithPool.$transaction(
       async (tx) => {
         await tx.website.update({
@@ -532,6 +566,7 @@ export async function POST(request: NextRequest) {
       { timeout: 30000 }
     );
 
+    console.log("=== Shopify Sync Complete ===");
     return cors(
       request,
       NextResponse.json({
