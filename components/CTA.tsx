@@ -31,7 +31,7 @@ export default function CTA() {
 
           <div className="flex flex-col sm:flex-row justify-center items-center gap-6">
             <Link
-              href="/contact"
+              href="/waitlist"
               className="group btn-primary text-lg px-8 py-4 flex items-center gap-2"
             >
               Get Started

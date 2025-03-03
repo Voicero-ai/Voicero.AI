@@ -9,7 +9,7 @@ export default function PricingPage() {
   return (
     <main className="min-h-screen bg-white">
       <Navbar />
-      <div className="pt-32">
+      <div className="pt-20">
         <Pricing />
       </div>
       <Footer />

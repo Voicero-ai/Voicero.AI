@@ -8,6 +8,21 @@ datasource db {
   relationMode = "prisma"
 }
 
+model Waitlist {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model ContactUs {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  company   String?
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+}
+
 model User {
   id               String           @id @default(uuid())
   username         String           @unique
@@ -95,9 +110,9 @@ model VerifiedDevice {
 }
 
 /// *
-///  * ---------------------------------------------------------------------------
-///  * WordPress Models (unchanged)
-///  * ----------------------------------------------------------------------------
+/// * ---------------------------------------------------------------------------
+/// * WordPress Models (unchanged)
+/// * ----------------------------------------------------------------------------
 model WordpressPost {
   id           Int                    @id @default(autoincrement())
   wpId         Int                    @unique
@@ -311,9 +326,9 @@ model WordpressCustomField {
 }
 
 /// *
-///  * ---------------------------------------------------------------------------
-///  * Shopify Models
-///  * ----------------------------------------------------------------------------
+/// * ---------------------------------------------------------------------------
+/// * Shopify Models
+/// * ----------------------------------------------------------------------------
 model ShopifyProduct {
   id          String                  @id @default(uuid())
   shopifyId   BigInt
@@ -466,9 +481,9 @@ model ShopifyComment {
 }
 
 /// *
-///  * ---------------------------------------------------------------------------
-///  * AI/Vector DB
-///  * ----------------------------------------------------------------------------
+/// * ---------------------------------------------------------------------------
+/// * AI/Vector DB
+/// * ----------------------------------------------------------------------------
 model AiThread {
   id            String      @id @default(uuid())
   threadId      String

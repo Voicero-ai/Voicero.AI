@@ -18,12 +18,34 @@ export default function Contact() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSubmitting(false);
-    // Reset form
-    setFormData({ name: "", email: "", company: "", message: "" });
-    alert("Thank you for your message! We will get back to you soon.");
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Something went wrong");
+      }
+
+      // Reset form
+      setFormData({ name: "", email: "", company: "", message: "" });
+      alert("Thank you for your message! We will get back to you soon.");
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to send message. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -152,7 +174,7 @@ export default function Contact() {
                   whileTap={{ scale: 0.98 }}
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full btn-primary"
+                  className="w-full btn-primary py-4 text-lg"
                 >
                   {isSubmitting ? "Sending..." : "Send Message"}
                 </motion.button>

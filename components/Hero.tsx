@@ -3,16 +3,25 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AnimatedComputer from "./AnimatedComputer";
-import { 
-  FaShopify, 
-  FaWordpress, 
-  FaWix, 
+import {
+  FaShopify,
+  FaWordpress,
+  FaWix,
   FaSquarespace,
   FaArrowRight,
-  FaSearch 
+  FaSearch,
 } from "react-icons/fa";
-import { SiWebflow, SiSquare, SiGhost, SiWoocommerce, SiShopware, SiMagento, SiBigcommerce } from "react-icons/si";
+import {
+  SiWebflow,
+  SiSquare,
+  SiGhost,
+  SiWoocommerce,
+  SiShopware,
+  SiMagento,
+  SiBigcommerce,
+} from "react-icons/si";
 import Image from "next/image";
+import Link from "next/link";
 
 const platforms = [
   {
@@ -21,7 +30,7 @@ const platforms = [
     url: "https://www.shopify.com/",
     color: "#95BF47",
     description: "All-in-one commerce platform for online stores",
-    isAvailable: true
+    isAvailable: true,
   },
   {
     name: "WordPress",
@@ -29,7 +38,7 @@ const platforms = [
     url: "https://wordpress.org/",
     color: "#21759B",
     description: "World's most popular website builder",
-    isAvailable: true
+    isAvailable: true,
   },
   {
     name: "Wix",
@@ -37,7 +46,7 @@ const platforms = [
     url: "#",
     color: "#000000",
     description: "Cloud-based web development platform",
-    isAvailable: false
+    isAvailable: false,
   },
   {
     name: "Squarespace",
@@ -45,7 +54,7 @@ const platforms = [
     url: "#",
     color: "#000000",
     description: "Website builder and hosting platform",
-    isAvailable: false
+    isAvailable: false,
   },
   {
     name: "Webflow",
@@ -53,7 +62,7 @@ const platforms = [
     url: "#",
     color: "#4353FF",
     description: "Visual web design platform",
-    isAvailable: false
+    isAvailable: false,
   },
   {
     name: "Square Online",
@@ -61,7 +70,7 @@ const platforms = [
     url: "#",
     color: "#3E4348",
     description: "Free online store from Square",
-    isAvailable: false
+    isAvailable: false,
   },
   {
     name: "Ghost",
@@ -69,7 +78,7 @@ const platforms = [
     url: "#",
     color: "#738A94",
     description: "Professional publishing platform",
-    isAvailable: false
+    isAvailable: false,
   },
   {
     name: "WooCommerce",
@@ -77,7 +86,7 @@ const platforms = [
     url: "#",
     color: "#96588A",
     description: "Open-source e-commerce for WordPress",
-    isAvailable: false
+    isAvailable: false,
   },
   {
     name: "Shopware",
@@ -85,7 +94,7 @@ const platforms = [
     url: "#",
     color: "#189EFF",
     description: "Enterprise e-commerce platform",
-    isAvailable: false
+    isAvailable: false,
   },
   {
     name: "Magento",
@@ -93,7 +102,7 @@ const platforms = [
     url: "#",
     color: "#EE672F",
     description: "Adobe's enterprise e-commerce solution",
-    isAvailable: false
+    isAvailable: false,
   },
   {
     name: "BigCommerce",
@@ -101,20 +110,20 @@ const platforms = [
     url: "#",
     color: "#12EF65",
     description: "Enterprise e-commerce platform",
-    isAvailable: false
-  }
+    isAvailable: false,
+  },
 ];
 
 export default function Hero() {
   const [showPlatformPopup, setShowPlatformPopup] = useState(false);
 
   const handlePlatformSelect = (url: string) => {
-    window.open(url, '_blank');
+    window.open(url, "_blank");
     setShowPlatformPopup(false);
   };
 
   return (
-    <section className="relative min-h-screen pt-32 overflow-hidden bg-gradient-to-b from-brand-lavender-light/20 via-white to-white">
+    <section className="relative min-h-[120vh] pt-20 pb-32 overflow-hidden bg-gradient-to-b from-brand-lavender-light/20 via-white to-white">
       {/* Background Elements */}
       <motion.div
         animate={{
@@ -142,31 +151,45 @@ export default function Hero() {
             transition={{ duration: 0.8 }}
           >
             <h1 className="flex flex-col text-brand-dark leading-tight mb-6">
-              <span className="text-4xl lg:text-5xl font-medium mb-3">Making Online Shopping Accessible</span>
+              <span className="text-4xl lg:text-5xl font-medium mb-3">
+                Making Online Shopping Accessible
+              </span>
               <div className="flex flex-wrap items-baseline gap-x-4">
-                <span className="text-4xl lg:text-5xl font-bold text-brand-accent">For Everyone,</span>
-                <span className="text-4xl lg:text-5xl font-medium">Without</span>
-                <span className="text-4xl lg:text-5xl font-bold text-brand-accent">Limits</span>
+                <span className="text-4xl lg:text-5xl font-bold text-brand-accent">
+                  For Everyone,
+                </span>
+                <span className="text-4xl lg:text-5xl font-medium">
+                  Without
+                </span>
+                <span className="text-4xl lg:text-5xl font-bold text-brand-accent">
+                  Limits
+                </span>
               </div>
             </h1>
             <p className="text-xl lg:text-2xl text-brand-dark/70 mb-12 leading-relaxed max-w-3xl">
-              Experience the web without barriers; while businesses see up to a 3x increase in conversions by making their websites truly accessible to all. Empowering seniors, stroke survivors, and individuals with mobility challenges to navigate any website effortlessly using just their voice.
+              Experience the web without barriers; while businesses see up to a
+              3x increase in conversions by making their websites truly
+              accessible to all. Empowering seniors, stroke survivors, and
+              individuals with mobility challenges to navigate any website
+              effortlessly using just their voice.
             </p>
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-6 mb-12">
-              <motion.button
-                whileHover={{ 
+              <Link href="/waitlist">
+                <motion.button
+                whileHover={{
                   scale: 1.02,
-                  boxShadow: "0 10px 30px -10px rgba(126, 58, 242, 0.4)"
+                  boxShadow: "0 10px 30px -10px rgba(126, 58, 242, 0.4)",
                 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setShowPlatformPopup(true)}
                 className="relative overflow-hidden bg-gradient-to-r from-brand-accent via-[#9F5EF0] to-brand-accent text-white rounded-xl text-lg px-8 py-4 font-medium transition-all duration-300 bg-size-200 bg-pos-0 hover:bg-pos-100 flex items-center justify-center gap-3"
               >
                 Start Now
-                <FaArrowRight className="w-4 h-4" />
-              </motion.button>
+                  <FaArrowRight className="w-4 h-4" />
+                </motion.button>
+              </Link>
 
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -186,47 +209,58 @@ export default function Hero() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
+                  className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
                   onClick={() => setShowPlatformPopup(false)}
                 >
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="bg-white rounded-2xl p-8 shadow-2xl max-w-4xl w-full mx-auto my-8"
-                    onClick={e => e.stopPropagation()}
+                    className="bg-white rounded-2xl p-8 shadow-2xl max-w-4xl w-full mx-auto my-4 z-[100] relative"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <h2 className="text-3xl font-bold text-brand-dark mb-4 text-center">
                       Choose Your Platform
                     </h2>
                     <p className="text-brand-dark/70 text-center mb-8 max-w-2xl mx-auto">
-                      Select your preferred platform to integrate Voicero&apos;s voice navigation capabilities
+                      Select your preferred platform to integrate Voicero&apos;s
+                      voice navigation capabilities
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       {platforms.map((platform) => (
                         <motion.button
                           key={platform.name}
-                          whileHover={{ 
+                          whileHover={{
                             scale: platform.isAvailable ? 1.02 : 1,
-                            boxShadow: platform.isAvailable ? `0 10px 30px -10px ${platform.color}40` : 'none'
+                            boxShadow: platform.isAvailable
+                              ? `0 10px 30px -10px ${platform.color}40`
+                              : "none",
                           }}
                           whileTap={{ scale: platform.isAvailable ? 0.98 : 1 }}
-                          onClick={() => platform.isAvailable ? handlePlatformSelect(platform.url) : null}
+                          onClick={() =>
+                            platform.isAvailable
+                              ? handlePlatformSelect(platform.url)
+                              : null
+                          }
                           className={`flex items-start gap-4 p-6 rounded-xl bg-white border-2 ${
-                            platform.isAvailable 
-                              ? 'border-gray-100 hover:border-brand-accent/20 cursor-pointer' 
-                              : 'border-gray-100 opacity-75 cursor-default'
+                            platform.isAvailable
+                              ? "border-gray-100 hover:border-brand-accent/20 cursor-pointer"
+                              : "border-gray-100 opacity-75 cursor-default"
                           } transition-colors text-left group relative overflow-hidden`}
                         >
-                          <div 
+                          <div
                             className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-                              !platform.isAvailable && 'grayscale'
+                              !platform.isAvailable && "grayscale"
                             }`}
                             style={{ color: platform.color }}
                           >
-                            <platform.icon className={`w-8 h-8 transition-transform ${
-                              platform.isAvailable ? 'group-hover:scale-110' : ''
-                            }`} />
+                            <platform.icon
+                              className={`w-8 h-8 transition-transform ${
+                                platform.isAvailable
+                                  ? "group-hover:scale-110"
+                                  : ""
+                              }`}
+                            />
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-brand-dark text-lg mb-1 flex items-center gap-2">
@@ -239,9 +273,13 @@ export default function Hero() {
                                 </span>
                               )}
                             </h3>
-                            <p className={`text-sm line-clamp-2 ${
-                              platform.isAvailable ? 'text-brand-dark/60' : 'text-brand-dark/40'
-                            }`}>
+                            <p
+                              className={`text-sm line-clamp-2 ${
+                                platform.isAvailable
+                                  ? "text-brand-dark/60"
+                                  : "text-brand-dark/40"
+                              }`}
+                            >
                               {platform.description}
                             </p>
                           </div>
@@ -252,19 +290,25 @@ export default function Hero() {
                 </motion.div>
               )}
             </AnimatePresence>
-            
+
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 mt-12">
               <div className="text-center">
-                <h3 className="text-3xl font-bold text-brand-accent mb-2">92%</h3>
-                <p className="text-brand-dark/70">Easier Navigation</p>
+                <h3 className="text-3xl font-bold text-brand-accent mb-2">
+                  61M
+                </h3>
+                <p className="text-brand-dark/70">Adults with Disabilities</p>
               </div>
               <div className="text-center">
-                <h3 className="text-3xl font-bold text-brand-accent mb-2">45%</h3>
-                <p className="text-brand-dark/70">Conversion Increase</p>
+                <h3 className="text-3xl font-bold text-brand-accent mb-2">
+                  98%
+                </h3>
+                <p className="text-brand-dark/70">Sites Need Accessibility</p>
               </div>
               <div className="text-center sm:col-span-1 col-span-2">
-                <h3 className="text-3xl font-bold text-brand-accent mb-2">$13B</h3>
+                <h3 className="text-3xl font-bold text-brand-accent mb-2">
+                  $13B
+                </h3>
                 <p className="text-brand-dark/70">Market Potential</p>
               </div>
             </div>

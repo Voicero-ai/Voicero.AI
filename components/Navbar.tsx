@@ -11,6 +11,7 @@ const navigation = [
   { name: "Pricing", href: "/pricing" },
   { name: "About", href: "/about" },
   { name: "Contact", href: "/contact" },
+  { name: "Waitlist", href: "/waitlist" },
 ];
 
 export default function Navbar() {
@@ -29,12 +30,30 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [scrolled]);
 
+  const handleNavClick = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    href: string
+  ) => {
+    if (href.startsWith("#")) {
+      e.preventDefault();
+      const element = document.querySelector(href);
+      if (element) {
+        const navHeight = 80; // Height of the navbar
+        const elementPosition =
+          element.getBoundingClientRect().top + window.pageYOffset;
+        window.scrollTo({
+          top: elementPosition - navHeight,
+          behavior: "smooth",
+        });
+        setIsOpen(false);
+      }
+    }
+  };
+
   return (
     <nav
       className={`fixed w-full z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-white/80 backdrop-blur-lg shadow-lg"
-          : "bg-transparent"
+        scrolled ? "bg-white/80 backdrop-blur-lg shadow-lg" : "bg-transparent"
       }`}
     >
       <div className="container mx-auto px-4">
@@ -48,15 +67,13 @@ export default function Navbar() {
               <Link
                 key={item.name}
                 href={item.href}
+                onClick={(e) => handleNavClick(e, item.href)}
                 className="text-brand-dark/70 hover:text-brand-accent transition-colors"
               >
                 {item.name}
               </Link>
             ))}
-            <Link
-              href="/contact"
-              className="btn-primary px-6 py-2"
-            >
+            <Link href="/waitlist" className="btn-primary px-6 py-2">
               Get Started
             </Link>
           </div>
@@ -92,14 +109,14 @@ export default function Navbar() {
                   <Link
                     key={item.name}
                     href={item.href}
-                    onClick={() => setIsOpen(false)}
+                    onClick={(e) => handleNavClick(e, item.href)}
                     className="text-brand-dark/70 hover:text-brand-accent transition-colors px-4 py-2"
                   >
                     {item.name}
                   </Link>
                 ))}
                 <Link
-                  href="/contact"
+                  href="/waitlist"
                   onClick={() => setIsOpen(false)}
                   className="btn-primary text-center px-6 py-2"
                 >

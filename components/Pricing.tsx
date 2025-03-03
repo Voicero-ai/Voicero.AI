@@ -116,7 +116,7 @@ export default function Pricing() {
                     )}
                   </div>
                   <Link
-                    href="/contact"
+                    href="/waitlist"
                     className={`block w-full py-3 px-6 rounded-lg transition-colors duration-200 ${
                       plan.popular
                         ? "bg-brand-accent hover:bg-brand-accent/90 text-white"

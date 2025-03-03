@@ -25,39 +25,50 @@ const appleContent = {
     },
     {
       title: "Services",
-      items: ["Apple One", "Apple TV+", "Apple Music", "iCloud+"]
+      items: ["Apple One", "Apple TV+", "Apple Music", "iCloud+"],
     },
     {
       title: "Legal",
-      items: ["Terms of Service", "Privacy Policy", "Account & Security"]
+      items: ["Terms of Service", "Privacy Policy", "Account & Security"],
     },
     {
       title: "Reviews",
-      items: ["4 Star Reviews", "5 Star Reviews", "Customer Stories", "Expert Reviews"]
+      items: [
+        "4 Star Reviews",
+        "5 Star Reviews",
+        "Customer Stories",
+        "Expert Reviews",
+      ],
     },
     {
       title: "Account",
-      items: ["Sign In", "Create Apple ID", "Manage Account", "iCloud Settings"]
-    }
+      items: [
+        "Sign In",
+        "Create Apple ID",
+        "Manage Account",
+        "iCloud Settings",
+      ],
+    },
   ],
-  footer: ["Reviews", "Support", "Privacy", "Contact"]
+  footer: ["Reviews", "Support", "Privacy", "Contact"],
 };
 
 export default function AnimatedComputer() {
   const demoQA = useMemo(() => {
     const qa = [
-      { 
+      {
         question: "Please order me the new iPhone to 123 Main St.",
-        answer: "Your new iPhone has been ordered and will be delivered to 123 Main St.",
+        answer:
+          "Your new iPhone has been ordered and will be delivered to 123 Main St.",
         highlight: "iPhone",
-        target: "nav"
+        target: "nav",
       },
-      { 
+      {
         question: "Show me all of the 4 star reviews for the new iPhone.",
         answer: "Here are all the 4 star reviews for the new iPhone.",
         highlight: "Reviews",
-        target: "footer"
-      }
+        target: "footer",
+      },
     ];
     return qa;
   }, []);
@@ -88,10 +99,10 @@ export default function AnimatedComputer() {
     if (pageView === "home" && step === 0) {
       setTypedText("");
       const currentQuestion = demoQA[currentIndex].question;
-      
+
       const typeLetter = (i: number) => {
         if (!isMounted) return;
-        
+
         if (i < currentQuestion.length) {
           setTypedText(currentQuestion.slice(0, i + 1));
           timeoutId = setTimeout(() => typeLetter(i + 1), 50);
@@ -159,8 +170,8 @@ export default function AnimatedComputer() {
   return (
     <div className="w-full flex flex-col items-center gap-6">
       {/* Browser window */}
-      <div className="w-full max-w-[800px] relative">
-        <motion.div 
+      <div className="w-full max-w-[800px] relative]">
+        <motion.div
           className="w-full aspect-[16/10] bg-white rounded-xl shadow-xl overflow-hidden"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -187,7 +198,7 @@ export default function AnimatedComputer() {
                 className="max-w-2xl mx-auto pb-16"
               >
                 {/* Navigation */}
-                <motion.div 
+                <motion.div
                   className="flex items-center justify-between mb-8 text-sm"
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -202,7 +213,10 @@ export default function AnimatedComputer() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
                         onClick={() => {
-                          if (demoQA[currentIndex].target === "nav" && item === demoQA[currentIndex].highlight) {
+                          if (
+                            demoQA[currentIndex].target === "nav" &&
+                            item === demoQA[currentIndex].highlight
+                          ) {
                             setHighlightedItems([item]);
                             setPageView("answer");
                           }
@@ -225,7 +239,7 @@ export default function AnimatedComputer() {
                 </motion.div>
 
                 {/* Hero Section */}
-                <motion.div 
+                <motion.div
                   className="text-center mb-12"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -257,16 +271,21 @@ export default function AnimatedComputer() {
                           <motion.div
                             key={item}
                             initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ 
-                              opacity: 1, 
+                            animate={{
+                              opacity: 1,
                               scale: highlightedItems.includes(item) ? 1.05 : 1,
                               backgroundColor: highlightedItems.includes(item)
                                 ? "rgba(126, 58, 242, 0.2)"
                                 : "rgba(243, 232, 255, 0.05)",
                             }}
-                            transition={{ delay: 0.3 + index * 0.1 + itemIndex * 0.05 }}
+                            transition={{
+                              delay: 0.3 + index * 0.1 + itemIndex * 0.05,
+                            }}
                             onClick={() => {
-                              if (demoQA[currentIndex].target === "section" && item === demoQA[currentIndex].highlight) {
+                              if (
+                                demoQA[currentIndex].target === "section" &&
+                                item === demoQA[currentIndex].highlight
+                              ) {
                                 setHighlightedItems([item]);
                                 setPageView("answer");
                               }
@@ -286,7 +305,7 @@ export default function AnimatedComputer() {
                 </div>
 
                 {/* Footer */}
-                <motion.div 
+                <motion.div
                   className="mt-8 pt-4 pb-4 border-t border-brand-accent/20"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -300,7 +319,10 @@ export default function AnimatedComputer() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.6 + index * 0.1 }}
                         onClick={() => {
-                          if (demoQA[currentIndex].target === "footer" && item === demoQA[currentIndex].highlight) {
+                          if (
+                            demoQA[currentIndex].target === "footer" &&
+                            item === demoQA[currentIndex].highlight
+                          ) {
                             setHighlightedItems([item]);
                             setPageView("answer");
                           }
@@ -325,12 +347,12 @@ export default function AnimatedComputer() {
               >
                 {demoQA[currentIndex].target === "nav" ? (
                   // iPhone order confirmation page
-                  <motion.div 
+                  <motion.div
                     className="w-full max-w-2xl mx-auto p-8"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                   >
-                    <motion.h1 
+                    <motion.h1
                       className="text-3xl font-bold mb-4 text-brand-accent"
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -338,7 +360,7 @@ export default function AnimatedComputer() {
                     >
                       iPhone 15 Pro
                     </motion.h1>
-                    <motion.p 
+                    <motion.p
                       className="text-lg mb-6 text-brand-text-secondary"
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -354,19 +376,20 @@ export default function AnimatedComputer() {
                         className="bg-green-50 border border-green-200 rounded-lg p-6"
                       >
                         <p className="text-lg text-green-600 font-medium">
-                          Your order has been confirmed and will be delivered to 123 Main St.
+                          Your order has been confirmed and will be delivered to
+                          123 Main St.
                         </p>
                       </motion.div>
                     )}
                   </motion.div>
                 ) : (
                   // Reviews answer page
-                  <motion.div 
+                  <motion.div
                     className="w-full max-w-2xl mx-auto p-8"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                   >
-                    <motion.h1 
+                    <motion.h1
                       className="text-2xl font-bold text-brand-text-primary mb-6"
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -395,7 +418,8 @@ export default function AnimatedComputer() {
                               className="border-b border-brand-accent/10 pb-4 last:border-0"
                             >
                               <div className="flex items-center text-brand-accent mb-2">
-                                {"★".repeat(4)}{"☆".repeat(1)}
+                                {"★".repeat(4)}
+                                {"☆".repeat(1)}
                               </div>
                               <p className="text-brand-text-secondary">
                                 Sample review {i + 1} for the iPhone 15 Pro...
@@ -414,15 +438,20 @@ export default function AnimatedComputer() {
       </div>
 
       {/* AI Assistant - Positioned below browser */}
-      <div className="w-full max-w-[800px] relative h-48"> {/* Container for AI Assistant */}
+      <div className="w-full max-w-[800px] relative h-48">
+        {" "}
+        {/* Container for AI Assistant */}
         <AnimatePresence>
           {isMinimized ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              whileHover={{ scale: 1.1, boxShadow: "0 0 15px rgba(126, 58, 242, 0.6)" }}
-              className="absolute top-4 right-4 z-50 bg-gradient-to-r from-[#E0BBE4] to-[#957DAD] p-4 rounded-full shadow-xl cursor-pointer transition-all duration-300"
+              whileHover={{
+                scale: 1.1,
+                boxShadow: "0 0 15px rgba(126, 58, 242, 0.6)",
+              }}
+              className="absolute top-4 right-4 bg-gradient-to-r from-[#E0BBE4] to-[#957DAD] p-4 rounded-full shadow-xl cursor-pointer transition-all duration-300"
               onClick={() => setIsMinimized(false)}
             >
               <FaRobot className="w-6 h-6 text-white" />
@@ -432,8 +461,11 @@ export default function AnimatedComputer() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(126, 58, 242, 0.2)" }}
-              className="absolute top-4 left-0 right-0 z-50 mx-4 bg-gradient-to-br from-white via-white to-brand-accent/5 rounded-lg shadow-xl border border-brand-accent/20 transition-all duration-300 hover:border-brand-accent/30"
+              whileHover={{
+                scale: 1.02,
+                boxShadow: "0 0 20px rgba(126, 58, 242, 0.2)",
+              }}
+              className="absolute top-4 left-0 right-0 mx-4 bg-gradient-to-br from-white via-white to-brand-accent/5 rounded-lg shadow-xl border border-brand-accent/20 transition-all duration-300 hover:border-brand-accent/30"
             >
               <div className="p-4 flex items-center justify-between border-b border-brand-accent/20 bg-gradient-to-r from-[#E0BBE4]/10 to-[#957DAD]/10">
                 <div className="flex items-center gap-3">
@@ -443,7 +475,9 @@ export default function AnimatedComputer() {
                   >
                     <FaMicrophone className="w-5 h-5" />
                   </motion.div>
-                  <span className="text-brand-accent font-medium">AI Assistant</span>
+                  <span className="text-brand-accent font-medium">
+                    AI Assistant
+                  </span>
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.1, rotate: 90 }}
@@ -454,23 +488,39 @@ export default function AnimatedComputer() {
                   <FaPlus className="w-4 h-4 text-brand-accent transform rotate-45" />
                 </motion.button>
               </div>
-              <motion.div 
+              <motion.div
                 className="p-6 space-y-4 bg-gradient-to-br from-white via-white to-[#E0BBE4]/10"
                 whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
               >
-                <motion.div 
+                <motion.div
                   className="flex items-start gap-3 p-3 rounded-lg bg-white/80 transition-all duration-300"
-                  whileHover={{ scale: 1.02, boxShadow: "0 0 10px rgba(126, 58, 242, 0.2)", backgroundColor: "rgba(255, 255, 255, 1)" }}
+                  whileHover={{
+                    scale: 1.02,
+                    boxShadow: "0 0 10px rgba(126, 58, 242, 0.2)",
+                    backgroundColor: "rgba(255, 255, 255, 1)",
+                  }}
                 >
-                  <span className="text-sm font-medium text-brand-text-secondary">User:</span>
-                  <span className="text-sm text-brand-text-primary flex-1">{typedText}</span>
+                  <span className="text-sm font-medium text-brand-text-secondary">
+                    User:
+                  </span>
+                  <span className="text-sm text-brand-text-primary flex-1">
+                    {typedText}
+                  </span>
                 </motion.div>
-                <motion.div 
+                <motion.div
                   className="flex items-start gap-3 p-3 rounded-lg bg-white/80 transition-all duration-300"
-                  whileHover={{ scale: 1.02, boxShadow: "0 0 10px rgba(126, 58, 242, 0.2)", backgroundColor: "rgba(255, 255, 255, 1)" }}
+                  whileHover={{
+                    scale: 1.02,
+                    boxShadow: "0 0 10px rgba(126, 58, 242, 0.2)",
+                    backgroundColor: "rgba(255, 255, 255, 1)",
+                  }}
                 >
-                  <span className="text-sm font-medium text-brand-text-secondary">AI:</span>
-                  <span className="text-sm text-brand-accent flex-1">{displayMessage}</span>
+                  <span className="text-sm font-medium text-brand-text-secondary">
+                    AI:
+                  </span>
+                  <span className="text-sm text-brand-accent flex-1">
+                    {displayMessage}
+                  </span>
                 </motion.div>
               </motion.div>
             </motion.div>

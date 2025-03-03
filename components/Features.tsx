@@ -26,8 +26,8 @@ import {
   Legend,
   Filler,
   ChartData,
-  ChartOptions
-} from 'chart.js';
+  ChartOptions,
+} from "chart.js";
 
 ChartJS.register(
   CategoryScale,
@@ -40,22 +40,22 @@ ChartJS.register(
   Filler
 );
 
-type ChartType = 'realtime' | 'predictive' | 'performance';
+type ChartType = "realtime" | "predictive" | "performance";
 
-const chartOptions: ChartOptions<'line'> = {
+const chartOptions: ChartOptions<"line"> = {
   responsive: true,
   maintainAspectRatio: false,
   scales: {
     x: {
       grid: {
         display: true,
-        color: 'rgba(0, 0, 0, 0.05)',
+        color: "rgba(0, 0, 0, 0.05)",
       },
     },
     y: {
       grid: {
         display: true,
-        color: 'rgba(0, 0, 0, 0.05)',
+        color: "rgba(0, 0, 0, 0.05)",
       },
       beginAtZero: true,
     },
@@ -76,68 +76,80 @@ const features = [
   {
     icon: FaUniversalAccess,
     title: "Voice Navigation",
-    description: "Navigate any website using simple voice commands, making the web accessible for those with limited mobility.",
+    description:
+      "Navigate any website using simple voice commands, making the web accessible for those with limited mobility.",
   },
   {
     icon: FaBrain,
     title: "Cognitive Support",
-    description: "Simplified interface and clear instructions help stroke survivors and those with cognitive challenges browse with confidence.",
+    description:
+      "Simplified interface and clear instructions help stroke survivors and those with cognitive challenges browse with confidence.",
   },
   {
     icon: FaHeartbeat,
     title: "Stress-Free Browsing",
-    description: "Reduced physical strain and frustration for heart patients and seniors through intuitive voice controls.",
+    description:
+      "Reduced physical strain and frustration for heart patients and seniors through intuitive voice controls.",
   },
   {
     icon: FaHandHoldingHeart,
     title: "Caregiver Support",
-    description: "Easy setup and monitoring tools help caregivers ensure their loved ones can browse independently and safely.",
+    description:
+      "Easy setup and monitoring tools help caregivers ensure their loved ones can browse independently and safely.",
   },
   {
     icon: FaShieldAlt,
     title: "Safe & Secure",
-    description: "Enterprise-grade security ensures personal information stays protected while providing accessible navigation.",
+    description:
+      "Enterprise-grade security ensures personal information stays protected while providing accessible navigation.",
   },
   {
     icon: FaTools,
     title: "Easy Integration",
-    description: "Quick setup for any website, making your online presence instantly accessible to all users.",
+    description:
+      "Quick setup for any website, making your online presence instantly accessible to all users.",
   },
 ];
 
-const chartData: Record<ChartType, ChartData<'line'>> = {
+const chartData: Record<ChartType, ChartData<"line">> = {
   realtime: {
-    labels: ['Day 3', 'Day 6', 'Day 9', 'Day 13', 'Day 17', 'Day 21', 'Day 25', 'Day 30'],
-    datasets: [{
-      label: 'User Independence Score',
-      data: [40, 65, 75, 82, 88, 92, 95, 98],
-      fill: true,
-      backgroundColor: 'rgba(126, 58, 242, 0.1)',
-      borderColor: 'rgba(126, 58, 242, 1)',
-      pointBackgroundColor: 'rgba(126, 58, 242, 1)',
-    }],
+    labels: ["2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"],
+    datasets: [
+      {
+        label: "Market Growth (Billions USD)",
+        data: [2.5, 3.8, 5.2, 7.1, 9.4, 11.8, 13.2, 15.0],
+        fill: true,
+        backgroundColor: "rgba(126, 58, 242, 0.1)",
+        borderColor: "rgba(126, 58, 242, 1)",
+        pointBackgroundColor: "rgba(126, 58, 242, 1)",
+      },
+    ],
   },
   predictive: {
-    labels: ['Day 3', 'Day 6', 'Day 9', 'Day 13', 'Day 17', 'Day 21', 'Day 25', 'Day 30'],
-    datasets: [{
-      label: 'Accessibility Score',
-      data: [60, 72, 80, 85, 90, 92, 95, 98],
-      fill: true,
-      backgroundColor: 'rgba(126, 58, 242, 0.1)',
-      borderColor: 'rgba(126, 58, 242, 1)',
-      pointBackgroundColor: 'rgba(126, 58, 242, 1)',
-    }],
+    labels: ["18-29", "30-44", "45-60", "60-75", "75+"],
+    datasets: [
+      {
+        label: "Online Shopping Usage by Age Group (%)",
+        data: [92, 87, 78, 65, 45],
+        fill: true,
+        backgroundColor: "rgba(126, 58, 242, 0.1)",
+        borderColor: "rgba(126, 58, 242, 1)",
+        pointBackgroundColor: "rgba(126, 58, 242, 1)",
+      },
+    ],
   },
   performance: {
-    labels: ['Day 3', 'Day 6', 'Day 9', 'Day 13', 'Day 17', 'Day 21', 'Day 25', 'Day 30'],
-    datasets: [{
-      label: 'User Satisfaction',
-      data: [75, 82, 86, 90, 92, 94, 96, 98],
-      fill: true,
-      backgroundColor: 'rgba(126, 58, 242, 0.1)',
-      borderColor: 'rgba(126, 58, 242, 1)',
-      pointBackgroundColor: 'rgba(126, 58, 242, 1)',
-    }],
+    labels: ["2023", "2024", "2025", "2026", "2027", "2028"],
+    datasets: [
+      {
+        label: "E-commerce Growth (Trillions USD)",
+        data: [5.8, 6.3, 6.9, 7.5, 8.1, 8.8],
+        fill: true,
+        backgroundColor: "rgba(126, 58, 242, 0.1)",
+        borderColor: "rgba(126, 58, 242, 1)",
+        pointBackgroundColor: "rgba(126, 58, 242, 1)",
+      },
+    ],
   },
 };
 
@@ -147,7 +159,7 @@ export default function Features() {
     triggerOnce: true,
   });
 
-  const [activeChart, setActiveChart] = useState<ChartType>('realtime');
+  const [activeChart, setActiveChart] = useState<ChartType>("realtime");
 
   const containerVariants = {
     hidden: {},
@@ -173,7 +185,10 @@ export default function Features() {
   };
 
   return (
-    <section className="py-20 bg-gradient-to-b from-white via-brand-lavender-light/10 to-white">
+    <section
+      id="features"
+      className="py-20 bg-gradient-to-b from-white via-brand-lavender-light/10 to-white"
+    >
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -185,7 +200,9 @@ export default function Features() {
             Making the Web Accessible for Everyone
           </h2>
           <p className="text-xl text-brand-dark/70 max-w-3xl mx-auto">
-            Our AI-powered voice navigation system breaks down barriers, enabling everyone to browse the web with confidence and independence.
+            Our AI-powered voice navigation system breaks down barriers,
+            enabling everyone to browse the web with confidence and
+            independence.
           </p>
         </motion.div>
 
@@ -197,11 +214,7 @@ export default function Features() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20"
         >
           {features.map((feature, index) => (
-            <motion.div
-              key={index}
-              variants={itemVariants}
-              className="group"
-            >
+            <motion.div key={index} variants={itemVariants} className="group">
               <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 h-full">
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-brand-lavender-light rounded-lg flex items-center justify-center group-hover:bg-brand-accent transition-colors duration-300">
@@ -211,9 +224,7 @@ export default function Features() {
                     {feature.title}
                   </h3>
                 </div>
-                <p className="text-brand-dark/70">
-                  {feature.description}
-                </p>
+                <p className="text-brand-dark/70">{feature.description}</p>
               </div>
             </motion.div>
           ))}
@@ -222,15 +233,18 @@ export default function Features() {
         {/* Interactive Chart Section */}
         <div className="mt-32">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-brand-dark mb-4">Real Impact, Real Results</h2>
+            <h2 className="text-4xl font-bold text-brand-dark mb-4">
+              Real Impact, Real Results
+            </h2>
             <p className="text-xl text-brand-dark/70">
-              See how our voice navigation technology improves web accessibility and user independence over time.
+              See how our voice navigation technology improves web accessibility
+              and user independence over time.
             </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Chart */}
-            <motion.div 
+            <motion.div
               className="relative aspect-[4/3] bg-white rounded-2xl shadow-lg p-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -254,38 +268,53 @@ export default function Features() {
             <div className="space-y-6">
               {[
                 {
-                  id: 'realtime' as ChartType,
-                  title: 'User Independence',
-                  description: 'Watch as users gain confidence and independence in their web browsing abilities.',
+                  id: "realtime" as ChartType,
+                  title: "Market Growth Potential",
+                  description:
+                    "The digital accessibility market is projected to reach $15B by 2026, showing strong growth potential.",
                 },
                 {
-                  id: 'predictive' as ChartType,
-                  title: 'Accessibility Score',
-                  description: 'Track how our AI adapts and improves accessibility for each user.',
+                  id: "predictive" as ChartType,
+                  title: "Age Group Analysis",
+                  description:
+                    "Online shopping usage varies significantly by age group, highlighting the need for accessible solutions.",
                 },
                 {
-                  id: 'performance' as ChartType,
-                  title: 'User Satisfaction',
-                  description: 'See the positive impact on user satisfaction and well-being.',
+                  id: "performance" as ChartType,
+                  title: "E-commerce Growth",
+                  description:
+                    "Global e-commerce market size projections, representing the total addressable market for accessibility solutions.",
                 },
               ].map((feature) => (
                 <motion.div
                   key={feature.id}
                   className={`p-6 rounded-xl cursor-pointer transition-all duration-300 ${
                     activeChart === feature.id
-                      ? 'bg-brand-accent text-white shadow-lg scale-105'
-                      : 'bg-white hover:bg-brand-accent/5'
+                      ? "bg-brand-accent text-white shadow-lg scale-105"
+                      : "bg-white hover:bg-brand-accent/5"
                   }`}
                   onClick={() => setActiveChart(feature.id)}
-                  whileHover={{ scale: activeChart === feature.id ? 1.05 : 1.02 }}
+                  whileHover={{
+                    scale: activeChart === feature.id ? 1.05 : 1.02,
+                  }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <h3 className={`text-xl font-bold mb-2 ${
-                    activeChart === feature.id ? 'text-white' : 'text-brand-dark'
-                  }`}>
+                  <h3
+                    className={`text-xl font-bold mb-2 ${
+                      activeChart === feature.id
+                        ? "text-white"
+                        : "text-brand-dark"
+                    }`}
+                  >
                     {feature.title}
                   </h3>
-                  <p className={activeChart === feature.id ? 'text-white/90' : 'text-brand-dark/70'}>
+                  <p
+                    className={
+                      activeChart === feature.id
+                        ? "text-white/90"
+                        : "text-brand-dark/70"
+                    }
+                  >
                     {feature.description}
                   </p>
                 </motion.div>
@@ -297,4 +326,3 @@ export default function Features() {
     </section>
   );
 }
- 
