@@ -1,6 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../../../lib/prisma"; // Adjust this path as needed
 
+interface Message {
+  id: string;
+  createdAt: Date;
+  content: string;
+  type: string | null;
+  threadId: string;
+  role: string;
+  pageUrl: string | null;
+  scrollToText: string | null;
+}
+
+interface Thread {
+  id: string;
+  messages: Message[];
+}
+
+interface Website {
+  id: string;
+  url: string;
+  name: string | null;
+  type: string;
+  plan: string;
+  active: boolean;
+  monthlyQueries: number;
+  queryLimit: number;
+  lastSyncedAt: Date | null;
+  customInstructions: string | null;
+  aiThreads: Thread[];
+  accessKeys: Array<{ key: string }>;
+  popUpQuestions: Array<{
+    id: string;
+    question: string;
+    createdAt: Date;
+  }>;
+}
+
 export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   try {
@@ -16,7 +52,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch website with aiThreads and messages
-    const website = await prisma.website.findUnique({
+    const website = (await prisma.website.findUnique({
       where: { id: websiteId },
       include: {
         accessKeys: {
@@ -43,7 +79,7 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-    });
+    })) as Website | null;
 
     if (!website) {
       return NextResponse.json(
@@ -75,23 +111,6 @@ export async function GET(request: NextRequest) {
       })),
     });
 
-    // After the website query and before the stats calculation
-    const rawThreads = await prisma.$queryRaw`
-      SELECT COUNT(*) as count 
-      FROM AiThread 
-      WHERE websiteId = ${websiteId}`;
-
-    console.log("Raw SQL thread count:", rawThreads);
-
-    // Also check a few threads directly
-    const sampleThreads = await prisma.$queryRaw`
-      SELECT id, threadId, websiteId 
-      FROM AiThread 
-      WHERE websiteId = ${websiteId} 
-      LIMIT 5`;
-
-    console.log("Sample threads:", sampleThreads);
-
     // Calculate global stats and content-specific redirects
     const globalStats = {
       totalAiRedirects: 0,
@@ -106,13 +125,13 @@ export async function GET(request: NextRequest) {
     console.log("Total threads:", website.aiThreads.length);
 
     // Iterate through all threads and their messages
-    website.aiThreads.forEach((thread) => {
+    website.aiThreads.forEach((thread: Thread) => {
       let hasVoiceMessage = false;
       let hasTextMessage = false;
 
       console.log("Thread messages:", thread.messages.length);
 
-      thread.messages.forEach((message) => {
+      thread.messages.forEach((message: Message) => {
         console.log("Message:", {
           role: message.role,
           type: message.type,
@@ -131,47 +150,117 @@ export async function GET(request: NextRequest) {
           }
         }
 
-        // Check for redirects (keep existing redirect counting logic)
-        try {
-          const contentJson = JSON.parse(message.content);
-          if (contentJson.redirect_url) {
+        // Check for redirects in assistant messages
+        if (message.role === "assistant") {
+          console.log("\n=== Processing Assistant Message ===");
+          console.log("Message content:", message.content);
+
+          // Helper function to normalize URLs
+          const normalizeUrl = (url: string) => {
+            try {
+              // If it's a full URL, parse it with URL constructor
+              let normalized = url;
+              if (url.startsWith("http")) {
+                const urlObj = new URL(url);
+                normalized = urlObj.pathname;
+              }
+              // Remove trailing slash and period
+              normalized = normalized.replace(/[\/\.]$/, "");
+              // Ensure leading slash
+              if (!normalized.startsWith("/")) {
+                normalized = "/" + normalized;
+              }
+
+              // Handle /pages/ prefix for Shopify pages
+              if (website.type === "Shopify") {
+                if (normalized.startsWith("/pages/")) {
+                  return normalized;
+                } else if (
+                  !normalized.startsWith("/products/") &&
+                  !normalized.startsWith("/blogs/")
+                ) {
+                  return "/pages" + normalized;
+                }
+              }
+              return normalized;
+            } catch (e) {
+              console.error("Error normalizing URL:", url, e);
+              return url;
+            }
+          };
+
+          // First try to find redirect in pageUrl
+          if (message.pageUrl) {
             globalStats.totalAiRedirects++;
-            const url = new URL(contentJson.redirect_url);
-            const normalizedUrl = url.pathname.replace(/\/$/, "");
+            const normalizedUrl = normalizeUrl(message.pageUrl);
             urlRedirectCounts.set(
               normalizedUrl,
               (urlRedirectCounts.get(normalizedUrl) || 0) + 1
             );
           }
-        } catch (e) {
-          if (message.pageUrl) {
-            globalStats.totalAiRedirects++;
-            const url = new URL(message.pageUrl);
-            const normalizedUrl = url.pathname.replace(/\/$/, "");
-            urlRedirectCounts.set(
-              normalizedUrl,
-              (urlRedirectCounts.get(normalizedUrl) || 0) + 1
-            );
+
+          // Try to find URLs in the content first - this is more reliable
+          const urlRegex =
+            /https?:\/\/[^\s)]+|(?:\/(?:pages|products|blogs)\/[^\s)]+)/g;
+          const urls = message.content.match(urlRegex);
+          if (urls && urls.length > 0) {
+            urls.forEach((url) => {
+              globalStats.totalAiRedirects++;
+              const normalizedUrl = normalizeUrl(url);
+              urlRedirectCounts.set(
+                normalizedUrl,
+                (urlRedirectCounts.get(normalizedUrl) || 0) + 1
+              );
+            });
+          } else {
+            // If no URLs found, try to parse content as JSON as fallback
+            try {
+              const contentObj = JSON.parse(message.content);
+              if (contentObj.redirect_url) {
+                globalStats.totalAiRedirects++;
+                const normalizedUrl = normalizeUrl(contentObj.redirect_url);
+                urlRedirectCounts.set(
+                  normalizedUrl,
+                  (urlRedirectCounts.get(normalizedUrl) || 0) + 1
+                );
+              }
+            } catch (e) {
+              // JSON parsing failed, but that's okay
+            }
           }
         }
       });
 
       if (hasVoiceMessage) {
         globalStats.totalVoiceChats++;
-        console.log("Incrementing voice chats");
       }
       if (hasTextMessage) {
         globalStats.totalTextChats++;
-        console.log("Incrementing text chats");
       }
     });
 
     // After counting
-    console.log("Final stats:", globalStats);
 
     // Helper function to get redirect count for a URL - normalize input URL
     const getRedirectCount = (url: string) => {
-      const normalizedUrl = url.replace(/\/$/, ""); // Remove trailing slash
+      // First normalize by removing trailing slash
+      let normalizedUrl = url.replace(/\/$/, "");
+
+      // For Shopify pages, we need to check both with and without /pages/ prefix
+      if (website.type === "Shopify") {
+        // If it's a pages URL without the prefix, add it
+        if (
+          !normalizedUrl.startsWith("/pages/") &&
+          !normalizedUrl.startsWith("/products/") &&
+          !normalizedUrl.startsWith("/blogs/")
+        ) {
+          normalizedUrl = "/pages/" + normalizedUrl;
+        }
+
+        // Also check for trailing periods that might have been captured
+        normalizedUrl = normalizedUrl.replace(/\.$/, "");
+      }
+
       return urlRedirectCounts.get(normalizedUrl) || 0;
     };
 
@@ -194,36 +283,43 @@ export async function GET(request: NextRequest) {
         },
       });
 
-      products = wpProducts.map((prod) => ({
-        id: String(prod.id),
-        title: prod.name,
-        url: `/products/${prod.slug}`,
-        type: "product" as const,
-        lastUpdated: prod.updatedAt.toISOString(),
-        aiRedirects: getRedirectCount(`/products/${prod.slug}`),
-        description: prod.description,
-        price: prod.price,
-        regularPrice: prod.regularPrice,
-        salePrice: prod.salePrice,
-        stockQuantity: prod.stockQuantity,
-        categories: prod.categories.map((c) => ({ id: c.id, name: c.name })),
-        tags: prod.tags.map((t) => ({ id: t.id, name: t.name })),
-        reviews: prod.reviews.map((r) => ({
-          id: r.id,
-          reviewer: r.reviewer,
-          rating: r.rating,
-          review: r.review,
-          verified: r.verified,
-          date: r.date.toISOString(),
-        })),
-        customFields: prod.customFields.reduce(
-          (acc, field) => ({
-            ...acc,
-            [field.metaKey]: field.metaValue,
-          }),
-          {}
-        ),
-      }));
+      console.log("\n=== Processing WordPress Products ===");
+      products = wpProducts.map((prod) => {
+        const productUrl = `/products/${prod.slug}`;
+        console.log(`\nChecking WordPress product: ${prod.name}`, {
+          url: productUrl,
+        });
+        return {
+          id: String(prod.id),
+          title: prod.name,
+          url: productUrl,
+          type: "product" as const,
+          lastUpdated: prod.updatedAt.toISOString(),
+          aiRedirects: getRedirectCount(productUrl),
+          description: prod.description,
+          price: prod.price,
+          regularPrice: prod.regularPrice,
+          salePrice: prod.salePrice,
+          stockQuantity: prod.stockQuantity,
+          categories: prod.categories.map((c) => ({ id: c.id, name: c.name })),
+          tags: prod.tags.map((t) => ({ id: t.id, name: t.name })),
+          reviews: prod.reviews.map((r) => ({
+            id: r.id,
+            reviewer: r.reviewer,
+            rating: r.rating,
+            review: r.review,
+            verified: r.verified,
+            date: r.date.toISOString(),
+          })),
+          customFields: prod.customFields.reduce(
+            (acc, field) => ({
+              ...acc,
+              [field.metaKey]: field.metaValue,
+            }),
+            {}
+          ),
+        };
+      });
 
       // Fetch WordPress Posts with more relations
       const wpPosts = await prisma.wordpressPost.findMany({
@@ -238,33 +334,40 @@ export async function GET(request: NextRequest) {
         },
       });
 
-      blogPosts = wpPosts.map((post) => ({
-        id: String(post.id),
-        title: post.title,
-        url: `/blog/${post.slug}`,
-        type: "post" as const,
-        lastUpdated: post.updatedAt.toISOString(),
-        aiRedirects: getRedirectCount(`/blog/${post.slug}`),
-        content: post.excerpt ?? post.content,
-        author: post.author?.name ?? "Unknown",
-        categories: post.categories.map((c) => ({ id: c.id, name: c.name })),
-        tags: post.tags.map((t) => ({ id: t.id, name: t.name })),
-        comments: post.comments.map((c) => ({
-          id: c.id,
-          author: c.authorName,
-          content: c.content,
-          date: c.date.toISOString(),
-          status: c.status,
-          parentId: c.parentId,
-        })),
-        customFields: post.customFields.reduce(
-          (acc, field) => ({
-            ...acc,
-            [field.metaKey]: field.metaValue,
-          }),
-          {}
-        ),
-      }));
+      console.log("\n=== Processing WordPress Posts ===");
+      blogPosts = wpPosts.map((post) => {
+        const postUrl = `/blog/${post.slug}`;
+        console.log(`\nChecking WordPress post: ${post.title}`, {
+          url: postUrl,
+        });
+        return {
+          id: String(post.id),
+          title: post.title,
+          url: postUrl,
+          type: "post" as const,
+          lastUpdated: post.updatedAt.toISOString(),
+          aiRedirects: getRedirectCount(postUrl),
+          content: post.excerpt ?? post.content,
+          author: post.author?.name ?? "Unknown",
+          categories: post.categories.map((c) => ({ id: c.id, name: c.name })),
+          tags: post.tags.map((t) => ({ id: t.id, name: t.name })),
+          comments: post.comments.map((c) => ({
+            id: c.id,
+            author: c.authorName,
+            content: c.content,
+            date: c.date.toISOString(),
+            status: c.status,
+            parentId: c.parentId,
+          })),
+          customFields: post.customFields.reduce(
+            (acc, field) => ({
+              ...acc,
+              [field.metaKey]: field.metaValue,
+            }),
+            {}
+          ),
+        };
+      });
 
       // Fetching WordPress Pages
       const wpPages = await prisma.wordpressPage.findMany({
@@ -272,15 +375,22 @@ export async function GET(request: NextRequest) {
         orderBy: { updatedAt: "desc" },
       });
 
-      pages = wpPages.map((p) => ({
-        id: String(p.id),
-        title: p.title,
-        url: `/${p.slug}`, // or p.link
-        type: "page" as const,
-        lastUpdated: p.updatedAt.toISOString(),
-        aiRedirects: getRedirectCount(`/${p.slug}`),
-        content: p.content,
-      }));
+      console.log("\n=== Processing WordPress Pages ===");
+      pages = wpPages.map((p) => {
+        const pageUrl = `/${p.slug}`;
+        console.log(`\nChecking WordPress page: ${p.title}`, {
+          url: pageUrl,
+        });
+        return {
+          id: String(p.id),
+          title: p.title,
+          url: pageUrl,
+          type: "page" as const,
+          lastUpdated: p.updatedAt.toISOString(),
+          aiRedirects: getRedirectCount(pageUrl),
+          content: p.content,
+        };
+      });
 
       // 6) If Shopify => fetch from Shopify tables
     } else if (website.type === "Shopify") {
@@ -295,45 +405,47 @@ export async function GET(request: NextRequest) {
         },
       });
 
-      products = shopifyProducts.map((prod) => ({
-        id: prod.id,
-        title: prod.title,
-        url: `/products/${prod.handle}`,
-        type: "product" as const,
-        lastUpdated: prod.updatedAt.toISOString(),
-        aiRedirects: getRedirectCount(`/products/${prod.handle}`),
-        description: prod.description,
-        // Add more product details
-        vendor: prod.vendor,
-        productType: prod.productType,
-        // Format price from first variant
-        price: prod.variants[0]?.price || 0,
-        // Include all variants
-        variants: prod.variants.map((v) => ({
-          id: v.id,
-          title: v.title,
-          price: v.price,
-          sku: v.sku,
-          inventory: v.inventory,
-        })),
-        // Include reviews
-        reviews: prod.reviews.map((r) => ({
-          id: r.id,
-          reviewer: r.reviewer,
-          rating: r.rating,
-          review: r.body,
-          title: r.title,
-          verified: r.verified,
-          date: r.createdAt.toISOString(),
-        })),
-        // Include images
-        images: prod.images.map((img) => ({
-          id: img.id,
-          url: img.url,
-          altText: img.altText,
-          caption: img.caption,
-        })),
-      }));
+      console.log("\n=== Processing Shopify Products ===");
+      products = shopifyProducts.map((prod) => {
+        const productUrl = `/products/${prod.handle}`;
+        console.log(`\nChecking Shopify product: ${prod.title}`, {
+          url: productUrl,
+        });
+        return {
+          id: prod.id,
+          title: prod.title,
+          url: productUrl,
+          type: "product" as const,
+          lastUpdated: prod.updatedAt.toISOString(),
+          aiRedirects: getRedirectCount(productUrl),
+          description: prod.description,
+          vendor: prod.vendor,
+          productType: prod.productType,
+          price: prod.variants[0]?.price || 0,
+          variants: prod.variants.map((v) => ({
+            id: v.id,
+            title: v.title,
+            price: v.price,
+            sku: v.sku,
+            inventory: v.inventory,
+          })),
+          reviews: prod.reviews.map((r) => ({
+            id: r.id,
+            reviewer: r.reviewer,
+            rating: r.rating,
+            review: r.body,
+            title: r.title,
+            verified: r.verified,
+            date: r.createdAt.toISOString(),
+          })),
+          images: prod.images.map((img) => ({
+            id: img.id,
+            url: img.url,
+            altText: img.altText,
+            caption: img.caption,
+          })),
+        };
+      });
 
       // Shopify Blog Posts with comments
       const shopifyBlogs = await prisma.shopifyBlog.findMany({
@@ -348,33 +460,38 @@ export async function GET(request: NextRequest) {
         },
       });
 
+      console.log("\n=== Processing Shopify Blog Posts ===");
       blogPosts = shopifyBlogs.flatMap((blog) =>
-        blog.posts.map((post) => ({
-          id: post.id,
-          title: post.title,
-          url: `/blogs/${blog.handle}/${post.handle}`,
-          type: "post" as const,
-          lastUpdated: post.updatedAt.toISOString(),
-          aiRedirects: getRedirectCount(`/blogs/${blog.handle}/${post.handle}`),
-          content: post.content,
-          author: post.author,
-          image: post.image,
-          // Include blog info
-          blog: {
-            id: blog.id,
-            title: blog.title,
-            handle: blog.handle,
-          },
-          // Include comments
-          comments: post.comments.map((c) => ({
-            id: c.id,
-            author: c.author,
-            content: c.body,
-            email: c.email,
-            status: c.status,
-            date: c.createdAt.toISOString(),
-          })),
-        }))
+        blog.posts.map((post) => {
+          const postUrl = `/blogs/${blog.handle}/${post.handle}`;
+          console.log(`\nChecking Shopify blog post: ${post.title}`, {
+            url: postUrl,
+          });
+          return {
+            id: post.id,
+            title: post.title,
+            url: postUrl,
+            type: "post" as const,
+            lastUpdated: post.updatedAt.toISOString(),
+            aiRedirects: getRedirectCount(postUrl),
+            content: post.content,
+            author: post.author,
+            image: post.image,
+            blog: {
+              id: blog.id,
+              title: blog.title,
+              handle: blog.handle,
+            },
+            comments: post.comments.map((c) => ({
+              id: c.id,
+              author: c.author,
+              content: c.body,
+              email: c.email,
+              status: c.status,
+              date: c.createdAt.toISOString(),
+            })),
+          };
+        })
       );
 
       // Shopify Pages
@@ -383,21 +500,36 @@ export async function GET(request: NextRequest) {
         orderBy: { updatedAt: "desc" },
       });
 
-      pages = shopifyPages.map((p) => ({
-        id: p.id,
-        title: p.title,
-        url: `/pages/${p.handle}`,
-        type: "page" as const,
-        lastUpdated: p.updatedAt.toISOString(),
-        aiRedirects: getRedirectCount(`/pages/${p.handle}`),
-        content: p.content,
-      }));
+      console.log("\n=== Processing Shopify Pages ===");
+      pages = shopifyPages.map((p) => {
+        const pageUrl = `/pages/${p.handle}`;
+        console.log(`\nChecking Shopify page: ${p.title}`, {
+          url: pageUrl,
+        });
+        return {
+          id: p.id,
+          title: p.title,
+          url: pageUrl,
+          type: "page" as const,
+          lastUpdated: p.updatedAt.toISOString(),
+          aiRedirects: getRedirectCount(pageUrl),
+          content: p.content,
+        };
+      });
     } else {
       return NextResponse.json(
         { error: `Unsupported website type: ${website.type}` },
         { status: 400 }
       );
     }
+
+    // After processing all messages, log the final counts
+    console.log("\n=== Final URL Redirect Counts ===");
+    console.log("Global redirects total:", globalStats.totalAiRedirects);
+    console.log("URL-specific counts:");
+    urlRedirectCounts.forEach((count, url) => {
+      console.log(`${url}: ${count} redirects`);
+    });
 
     // 7) Finally, return a structure matching your front-end:
     //    domain, type, plan, status, monthlyQueries, queryLimit, etc.

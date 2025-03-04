@@ -77,6 +77,7 @@ model Website {
   VectorDbConfig           VectorDbConfig?
   ShopifyBlogPost          ShopifyBlogPost[]
 
+  @@unique([userId, url, type])
   @@index([userId])
 }
 

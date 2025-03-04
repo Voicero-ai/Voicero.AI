@@ -7,7 +7,7 @@ import crypto from "crypto";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  try { 
+  try {
     // Verify authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -52,33 +52,17 @@ export async function POST(request: Request) {
         );
       }
     } else {
-      // Check for existing website with same URL
-      website = await prisma.website.findFirst({
+      // Use upsert to prevent duplicates
+      website = await prisma.website.upsert({
         where: {
-          url: siteUrl,
-          userId: session.user.id,
-          type: type,
-        },
-        include: {
-          accessKeys: true,
-        },
-      });
-    }
-
-    if (website) {
-      // Use existing access key or create new one
-      accessKey =
-        website.accessKeys[0] ||
-        (await prisma.accessKey.create({
-          data: {
-            key: generateAccessKey(),
-            websiteId: website.id,
+          userId_url_type: {
+            url: siteUrl,
+            userId: session.user.id,
+            type: type,
           },
-        }));
-    } else {
-      // Create new website and access key
-      website = await prisma.website.create({
-        data: {
+        },
+        update: {},
+        create: {
           url: siteUrl,
           name: websiteName,
           userId: session.user.id,
@@ -94,8 +78,17 @@ export async function POST(request: Request) {
           accessKeys: true,
         },
       });
-      accessKey = website.accessKeys[0];
     }
+
+    // Use existing access key or create new one if needed
+    accessKey =
+      website.accessKeys[0] ||
+      (await prisma.accessKey.create({
+        data: {
+          key: generateAccessKey(),
+          websiteId: website.id,
+        },
+      }));
 
     // Construct redirect URL with access key
     const redirectUrl = new URL(wpRedirect);

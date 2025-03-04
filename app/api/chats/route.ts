@@ -83,7 +83,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(formattedThreads);
   } catch (error) {
-    console.error("[CHATS_GET]", error);
+    console.error("[CHATS_GET]", { error });
     return new NextResponse("Internal error", { status: 500 });
   }
 }

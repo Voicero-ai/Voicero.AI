@@ -22,9 +22,9 @@ export default function ConnectPage() {
   const [websites, setWebsites] = useState<Website[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const siteUrl = searchParams.get("site_url");
-  const wpRedirect = searchParams.get("redirect_url");
-  const siteType = searchParams.get("type") || "WordPress";
+  const siteUrl = searchParams!.get("site_url");
+  const wpRedirect = searchParams!.get("redirect_url");
+  const siteType = searchParams!.get("type") || "WordPress";
 
   const connectWebsite = useCallback(
     async (
@@ -33,6 +33,14 @@ export default function ConnectPage() {
       savedWpRedirect?: string
     ) => {
       try {
+        // Ensure we have a session before proceeding
+        if (!session?.user?.id) {
+          const currentUrl = new URL(window.location.href);
+          const callbackUrl = `/app/connect${currentUrl.search}`;
+          router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+          return;
+        }
+
         let connectionData = {
           siteUrl: savedSiteUrl || siteUrl,
           wpRedirect: savedWpRedirect || wpRedirect,
@@ -60,7 +68,11 @@ export default function ConnectPage() {
 
         const response = await fetch("/api/connect-website", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            // Include session token in request
+            Authorization: `Bearer ${session.user.id}`,
+          },
           body: JSON.stringify({
             siteUrl: connectionData.siteUrl,
             wpRedirect: connectionData.wpRedirect,
@@ -84,69 +96,81 @@ export default function ConnectPage() {
         setError(err?.message || "An unknown error occurred");
       }
     },
-    [siteUrl, wpRedirect, siteType]
+    [siteUrl, wpRedirect, siteType, router, session]
   );
 
   useEffect(() => {
     if (status === "loading") return;
 
-    // Store connection params and handle auth redirect
-    if (siteUrl && wpRedirect) {
-      sessionStorage.setItem(
-        "connectionParams",
-        JSON.stringify({
-          site_url: siteUrl,
-          redirect_url: wpRedirect,
-          type: siteType,
-        })
-      );
-    }
-
-    if (!session) {
+    // Immediately redirect if no session
+    if (!session?.user?.id) {
       const currentUrl = new URL(window.location.href);
       const callbackUrl = `/app/connect${currentUrl.search}`;
       router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       return;
     }
 
-    const fetchWebsites = async () => {
-      try {
-        const response = await fetch("/api/websites");
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to fetch websites");
-        }
-
-        // Filter websites based on the type from URL
-        const filteredWebsites = data.filter(
-          (website: Website) => website.type === siteType
+    // Only proceed with connection flow if we have a session and user
+    if (session?.user?.id) {
+      // Store connection params
+      if (siteUrl && wpRedirect) {
+        sessionStorage.setItem(
+          "connectionParams",
+          JSON.stringify({
+            site_url: siteUrl,
+            redirect_url: wpRedirect,
+            type: siteType,
+          })
         );
-        setWebsites(filteredWebsites);
-
-        // If there's only one site of this type or none, proceed with connection
-        if (filteredWebsites.length <= 1) {
-          // Get stored params if current URL doesn't have them
-          const storedParams = sessionStorage.getItem("connectionParams");
-          if (!siteUrl && !wpRedirect && storedParams) {
-            const params = JSON.parse(storedParams);
-            await connectWebsite(
-              undefined,
-              params.site_url,
-              params.redirect_url
-            );
-          } else {
-            await connectWebsite();
-          }
-        }
-      } catch (err: any) {
-        setError(err?.message || "An unknown error occurred");
-      } finally {
-        setLoading(false);
       }
-    };
 
-    fetchWebsites();
+      const fetchWebsites = async () => {
+        try {
+          // Ensure session and user still exist
+          if (!session?.user?.id) return;
+
+          const response = await fetch("/api/websites", {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.user.id}`,
+            },
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Failed to fetch websites");
+          }
+
+          // Filter websites based on the type from URL
+          const filteredWebsites = data.filter(
+            (website: Website) => website.type === siteType
+          );
+          setWebsites(filteredWebsites);
+
+          // If there's only one site of this type or none, proceed with connection
+          if (filteredWebsites.length <= 1) {
+            // Get stored params if current URL doesn't have them
+            const storedParams = sessionStorage.getItem("connectionParams");
+            if (!siteUrl && !wpRedirect && storedParams) {
+              const params = JSON.parse(storedParams);
+              await connectWebsite(
+                undefined,
+                params.site_url,
+                params.redirect_url
+              );
+            } else {
+              await connectWebsite();
+            }
+          }
+        } catch (err: any) {
+          setError(err?.message || "An unknown error occurred");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchWebsites();
+    }
   }, [session, status, siteUrl, wpRedirect, siteType, router, connectWebsite]);
 
   if (!session && status !== "loading") {
