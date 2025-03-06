@@ -39,6 +39,7 @@
     "next-auth": "^4.24.11",
     "next-sitemap": "^4.2.3",
     "openai": "^4.85.1",
+    "pdf-lib": "^1.17.1",
     "pdfkit": "^0.16.0",
     "pdfkit-table": "^0.1.99",
     "prisma": "^6.2.1",

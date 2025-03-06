@@ -17,6 +17,7 @@ import { Upload } from "@aws-sdk/lib-storage";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import os from "os";
 import { v4 as uuidv4 } from "uuid";
+import { PDFDocument as PDFLibDocument, StandardFonts } from "pdf-lib";
 
 export const dynamic = "force-dynamic";
 
@@ -363,122 +364,442 @@ async function createSyncReport(
   s3Reports: { [key: string]: { url: string; key: string } };
 }> {
   console.log("Generating PDF report...");
-
-  // Create a timestamp for filenames
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 
-  // Create a temporary directory for the report files
+  // Create temp directory for report files
   const tempDir = fs.mkdtempSync(
-    path.join(os.tmpdir(), `shopify-sync-${uuidv4()}-`)
+    path.join(os.tmpdir(), `shopify-reports-${uuidv4()}`)
   );
-  console.log(`Using temporary directory: ${tempDir}`);
-
-  if (!fs.existsSync(tempDir)) {
-    fs.mkdirSync(tempDir, { recursive: true });
-  }
-
-  // Create fonts directory inside tempDir
-  const fontDir = path.join(tempDir, "fonts");
-  if (!fs.existsSync(fontDir)) {
-    fs.mkdirSync(fontDir, { recursive: true });
-  }
-
-  // Copy OpenSans font to the temporary directory
-  const srcFontPath = path.join(
-    process.cwd(),
-    "public",
-    "fonts",
-    "OpenSans-Regular.ttf"
-  );
-  const destFontPath = path.join(fontDir, "OpenSans-Regular.ttf");
-  let fontAvailable = false;
-
-  if (fs.existsSync(srcFontPath)) {
-    try {
-      fs.copyFileSync(srcFontPath, destFontPath);
-      console.log(`Copied font from ${srcFontPath} to ${destFontPath}`);
-      // Use the temporary font directory for PDFKit
-      process.env.FONTCONFIG_PATH = fontDir;
-      fontAvailable = true;
-    } catch (err) {
-      console.error(`Error copying font: ${err}`);
-    }
-  } else {
-    console.warn(`OpenSans font not found at path: ${srcFontPath}`);
-  }
-
-  if (!fontAvailable) {
-    console.warn(
-      "OpenSans font not available, PDFs will use default fonts. This may cause rendering issues."
-    );
-  }
 
   // Initialize section reports
   const sectionReports: { [key: string]: string } = {};
   const s3Reports: { [key: string]: { url: string; key: string } } = {};
 
-  // SUPER SIMPLE: Create empty PDFs with just the right names
-  const createPlaceholderPDF = (filename: string) => {
-    const filepath = path.join(tempDir, filename);
+  // Create main report file
+  const mainPath = path.join(tempDir, `sync-report-${timestamp}.pdf`);
 
-    // Create a simple PDF file without using PDFKit at all
-    const minimumPDFContent =
-      "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000052 00000 n\n0000000101 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n178\n%%EOF";
+  // Replace the createPDFReport function with a direct PDF creation approach
+  const createPDFReport = (
+    filePath: string,
+    reportType: string,
+    reportData: any
+  ) => {
+    return new Promise<void>(async (resolve, reject) => {
+      try {
+        console.log(`Starting PDF generation for ${reportType} report`);
+        const fullPath = path.join(tempDir, filePath);
 
-    fs.writeFileSync(filepath, minimumPDFContent);
+        // Helper function to strip HTML tags
+        const stripHtml = (html: string | null | undefined): string => {
+          if (!html) return "N/A";
+          return html.replace(/<[^>]*>?/gm, " ").trim();
+        };
 
-    return {
-      filepath,
-      end: () => {}, // Dummy end function that does nothing
-    };
+        // Create content for the PDF based on report type
+        let content = `Shopify ${reportType} Report\n\n`;
+        content += `Generated: ${new Date().toLocaleString()}\n\n`;
+
+        // Add shop information if it exists
+        if (data.data?.shop) {
+          content += "Shop Information:\n";
+          content += `Name: ${data.data.shop.name || "N/A"}\n`;
+          content += `Email: ${data.data.shop.email || "N/A"}\n`;
+          content += `Domain: ${data.data.shop.primaryDomain?.url || "N/A"}\n`;
+          content += `Currency: ${data.data.shop.currencyCode || "N/A"}\n`;
+          content += `Timezone: ${
+            data.data.shop.timezoneAbbreviation || "N/A"
+          }\n\n`;
+        }
+
+        // Log content generation start
+        console.log(`Generating content for ${reportType} report...`);
+
+        // Based on report type, add specific content
+        switch (reportType.toLowerCase()) {
+          case "main":
+            // Add summary information
+            content += "Sync Summary:\n";
+
+            const productCount = data.data?.products?.length || 0;
+            const pageCount = data.data?.pages?.length || 0;
+            const blogCount = data.data?.blogs?.length || 0;
+            const collectionCount = data.data?.collections?.length || 0;
+            const discountCount =
+              (data.data?.discounts?.automaticDiscounts?.length || 0) +
+              (data.data?.discounts?.codeDiscounts?.length || 0);
+
+            content += `Products: ${productCount}\n`;
+            content += `Pages: ${pageCount}\n`;
+            content += `Blogs: ${blogCount}\n`;
+            content += `Collections: ${collectionCount}\n`;
+            content += `Discounts: ${discountCount}\n\n`;
+
+            content += "See individual reports for detailed information.\n";
+            break;
+
+          case "products":
+            if (data.data?.products && data.data.products.length > 0) {
+              content += `Products (${data.data.products.length}):\n\n`;
+
+              // List all products
+              data.data.products.forEach((product, index) => {
+                content += `${index + 1}. ${
+                  product.title || "Untitled Product"
+                }\n`;
+                content += `   Handle: ${product.handle || "N/A"}\n`;
+                content += `   Vendor: ${product.vendor || "N/A"}\n`;
+                content += `   Type: ${product.productType || "N/A"}\n`;
+
+                // Product description
+                if (product.description) {
+                  const cleanDescription = stripHtml(product.description);
+                  content += `   Description: ${cleanDescription.substring(
+                    0,
+                    200
+                  )}${cleanDescription.length > 200 ? "..." : ""}\n`;
+                }
+
+                // Variants
+                if (product.variants && product.variants.length > 0) {
+                  content += `   Variants: ${product.variants.length}\n`;
+                  product.variants.forEach((variant) => {
+                    content += `     - ${variant.title || "Default"}: $${
+                      variant.price || "0.00"
+                    } (SKU: ${variant.sku || "N/A"}, Inventory: ${
+                      variant.inventory !== undefined
+                        ? variant.inventory
+                        : "N/A"
+                    })\n`;
+                  });
+                }
+
+                // Collections
+                if (product.collections && product.collections.length > 0) {
+                  content += `   Collections: ${product.collections
+                    .map((c) => c.title)
+                    .join(", ")}\n`;
+                }
+
+                content += "\n";
+              });
+            } else {
+              content += "No products found.\n";
+            }
+            break;
+
+          case "pages":
+            if (data.data?.pages && data.data.pages.length > 0) {
+              content += `Pages (${data.data.pages.length}):\n\n`;
+
+              // List all pages
+              data.data.pages.forEach((page, index) => {
+                content += `${index + 1}. ${page.title || "Untitled Page"}\n`;
+                content += `   Handle: ${page.handle || "N/A"}\n`;
+
+                // Add content preview (limited to avoid overwhelming the PDF)
+                if (page.content) {
+                  content += "   Content Preview:\n";
+                  // Strip HTML tags for readable text
+                  const contentPreview = stripHtml(page.content).substring(
+                    0,
+                    200
+                  );
+                  content += `   ${contentPreview}${
+                    page.content.length > 200 ? "..." : ""
+                  }\n`;
+                }
+
+                content += "\n";
+              });
+            } else {
+              content += "No pages found.\n";
+            }
+            break;
+
+          case "blogs":
+            if (data.data?.blogs && data.data.blogs.length > 0) {
+              content += `Blogs (${data.data.blogs.length}):\n\n`;
+
+              // List all blogs
+              data.data.blogs.forEach((blog, index) => {
+                content += `${index + 1}. ${blog.title || "Untitled Blog"}\n`;
+                content += `   Handle: ${blog.handle || "N/A"}\n`;
+
+                // Blog posts
+                if (blog.posts && blog.posts.length > 0) {
+                  content += `   Posts (${blog.posts.length}):\n`;
+                  blog.posts.forEach((post) => {
+                    content += `     - ${post.title || "Untitled Post"} by ${
+                      post.author || "Unknown"
+                    }\n`;
+
+                    // Add content preview (limited to avoid overwhelming the PDF)
+                    if (post.content) {
+                      // Strip HTML tags for readable text
+                      const contentPreview = stripHtml(post.content).substring(
+                        0,
+                        100
+                      );
+                      content += `       ${contentPreview}${
+                        post.content.length > 100 ? "..." : ""
+                      }\n`;
+                    }
+                  });
+                } else {
+                  content += "   No posts found in this blog.\n";
+                }
+
+                content += "\n";
+              });
+            } else {
+              content += "No blogs found.\n";
+            }
+            break;
+
+          case "collections":
+            if (data.data?.collections && data.data.collections.length > 0) {
+              content += `Collections (${data.data.collections.length}):\n\n`;
+
+              // List all collections
+              data.data.collections.forEach((collection, index) => {
+                content += `${index + 1}. ${
+                  collection.title || "Untitled Collection"
+                }\n`;
+                content += `   Handle: ${collection.handle || "N/A"}\n`;
+                content += `   Sort Order: ${collection.sortOrder || "N/A"}\n`;
+                content += `   Updated At: ${collection.updatedAt || "N/A"}\n`;
+
+                // Collection description
+                if (collection.description) {
+                  content += `   Description: ${collection.description}\n`;
+                }
+
+                // Products in collection - only if available from the API
+                if (
+                  "products" in collection &&
+                  Array.isArray(collection.products) &&
+                  collection.products.length > 0
+                ) {
+                  content += `   Products in Collection: ${collection.products.length}\n`;
+                  (collection.products as any[]).forEach((product) => {
+                    content += `     - ${
+                      product.title || "Untitled Product"
+                    } (${product.handle || "no-handle"})\n`;
+                  });
+                }
+
+                // Rule-based collection
+                if (collection.ruleSet && collection.ruleSet.rules) {
+                  content += "   Collection Rules:\n";
+                  collection.ruleSet.rules.forEach((rule) => {
+                    if (
+                      "column" in rule &&
+                      "condition" in rule &&
+                      "relation" in rule
+                    ) {
+                      content += `     - ${rule.column} ${rule.relation} ${rule.condition}\n`;
+                    }
+                  });
+                }
+
+                content += "\n";
+              });
+            } else {
+              content += "No collections found.\n";
+            }
+            break;
+
+          case "discounts":
+            const automaticDiscounts =
+              data.data?.discounts?.automaticDiscounts || [];
+            const codeDiscounts = data.data?.discounts?.codeDiscounts || [];
+
+            if (automaticDiscounts.length > 0 || codeDiscounts.length > 0) {
+              content += "Discounts:\n\n";
+
+              // Automatic discounts
+              if (automaticDiscounts.length > 0) {
+                content += `Automatic Discounts (${automaticDiscounts.length}):\n`;
+
+                automaticDiscounts.forEach((discount, index) => {
+                  content += `${index + 1}. ${
+                    discount.title || "Untitled Discount"
+                  }\n`;
+                  content += `   Type: ${discount.type || "N/A"}\n`;
+                  content += `   Value: ${discount.value || "N/A"}\n`;
+                  content += `   Applies To: ${discount.appliesTo || "N/A"}\n`;
+                  content += `   Start Date: ${discount.startsAt || "N/A"}\n`;
+                  content += `   End Date: ${discount.endsAt || "N/A"}\n`;
+                  content += `   Status: ${discount.status || "N/A"}\n\n`;
+                });
+              }
+
+              // Code discounts
+              if (codeDiscounts.length > 0) {
+                content += `Code Discounts (${codeDiscounts.length}):\n`;
+
+                codeDiscounts.forEach((discount, index) => {
+                  content += `${index + 1}. ${
+                    discount.title || "Untitled Discount"
+                  }\n`;
+                  content += `   Code: ${discount.code || "N/A"}\n`;
+                  content += `   Type: ${discount.type || "N/A"}\n`;
+                  content += `   Value: ${discount.value || "N/A"}\n`;
+                  content += `   Applies To: ${discount.appliesTo || "N/A"}\n`;
+                  content += `   Start Date: ${discount.startsAt || "N/A"}\n`;
+                  content += `   End Date: ${discount.endsAt || "N/A"}\n`;
+                  content += `   Status: ${discount.status || "N/A"}\n\n`;
+                });
+              }
+            } else {
+              content += "No discounts found.\n";
+            }
+            break;
+        }
+
+        // Log a preview of the content
+        console.log(
+          `Generated content for ${reportType} (first 200 chars): ${content.substring(
+            0,
+            200
+          )}...`
+        );
+        console.log(
+          `Total content length: ${content.length} characters, ${
+            content.split("\n").length
+          } lines`
+        );
+
+        // Create a text file with the content for debugging
+        const textFilePath = path.join(tempDir, `${reportType}-content.txt`);
+        fs.writeFileSync(textFilePath, content);
+
+        // Create PDF with pdf-lib
+        console.log(`Creating PDF with pdf-lib for ${reportType}...`);
+        const pdfDoc = await PDFLibDocument.create();
+        const page = pdfDoc.addPage([612, 792]); // Letter size
+
+        // Embed the standard Courier font
+        const font = await pdfDoc.embedFont(StandardFonts.Courier);
+        const fontSize = 10;
+        const lineHeight = fontSize * 1.2;
+
+        // Split content into lines and write to PDF
+        const lines = content.split("\n");
+        let y = 750; // Start position from top
+
+        for (const line of lines) {
+          if (y < 50) {
+            // Add a new page if we're at the bottom
+            const newPage = pdfDoc.addPage([612, 792]);
+            newPage.setFont(font);
+            newPage.setFontSize(fontSize);
+            y = 750;
+          }
+
+          page.drawText(line, {
+            x: 50,
+            y: y,
+            font: font,
+            size: fontSize,
+          });
+
+          y -= lineHeight;
+        }
+
+        // Save the PDF to a file
+        const pdfBytes = await pdfDoc.save();
+        fs.writeFileSync(fullPath, pdfBytes);
+
+        const stats = fs.statSync(fullPath);
+        console.log(
+          `Created ${reportType} PDF report at ${fullPath} (${stats.size} bytes)`
+        );
+
+        resolve();
+      } catch (error) {
+        console.error(`Error creating ${reportType} PDF report:`, error);
+        // Create minimal valid PDF as fallback
+        console.log(`Falling back to minimal PDF for ${reportType}`);
+        createMinimalPDF(path.join(tempDir, filePath))
+          .then(resolve)
+          .catch(reject);
+      }
+    });
+  };
+
+  // Fallback function to create a minimal valid PDF if the main function fails
+  const createMinimalPDF = (filePath: string): Promise<void> => {
+    return new Promise<void>(async (resolve, reject) => {
+      try {
+        // Create a minimal valid PDF using pdf-lib
+        console.log(`Creating minimal PDF at ${filePath}...`);
+        const pdfDoc = await PDFLibDocument.create();
+        pdfDoc.addPage([612, 792]); // Letter size
+
+        const pdfBytes = await pdfDoc.save();
+        fs.writeFileSync(filePath, pdfBytes);
+
+        console.log(`Created minimal PDF at ${filePath}`);
+        resolve();
+      } catch (error) {
+        console.error("Error creating minimal PDF:", error);
+        reject(error);
+      }
+    });
   };
 
   // Create main report
-  const mainPath = path.join(tempDir, `sync-report-${timestamp}.pdf`);
-  const mainReport = createPlaceholderPDF(`sync-report-${timestamp}.pdf`);
+  await createPDFReport(`sync-report-${timestamp}.pdf`, "main", data);
 
-  // Create section PDFs if needed
-  if (data.data?.products && data.data.products.length > 0) {
+  // Create section reports based on available data
+  if (data.data?.products) {
     const productsPath = path.join(tempDir, `products-report-${timestamp}.pdf`);
-    createPlaceholderPDF(`products-report-${timestamp}.pdf`);
+    await createPDFReport(`products-report-${timestamp}.pdf`, "products", data);
     sectionReports.products = productsPath;
   }
 
-  if (data.data?.pages && data.data.pages.length > 0) {
+  if (data.data?.pages) {
     const pagesPath = path.join(tempDir, `pages-report-${timestamp}.pdf`);
-    createPlaceholderPDF(`pages-report-${timestamp}.pdf`);
+    await createPDFReport(`pages-report-${timestamp}.pdf`, "pages", data);
     sectionReports.pages = pagesPath;
   }
 
-  if (data.data?.blogs && data.data.blogs.length > 0) {
+  if (data.data?.blogs) {
     const postsPath = path.join(tempDir, `posts-report-${timestamp}.pdf`);
-    createPlaceholderPDF(`posts-report-${timestamp}.pdf`);
+    await createPDFReport(`posts-report-${timestamp}.pdf`, "blogs", data);
     sectionReports.posts = postsPath;
   }
 
-  if (data.data?.collections && data.data.collections.length > 0) {
-    const collectionsPath = path.join(
-      tempDir,
-      `collections-report-${timestamp}.pdf`
-    );
-    createPlaceholderPDF(`collections-report-${timestamp}.pdf`);
-    sectionReports.collections = collectionsPath;
-  }
-
-  if (data.data?.discounts) {
+  // Add discounts report if discount data is available
+  if (
+    (data.data?.discounts?.automaticDiscounts?.length || 0) > 0 ||
+    (data.data?.discounts?.codeDiscounts?.length || 0) > 0
+  ) {
     const discountsPath = path.join(
       tempDir,
       `discounts-report-${timestamp}.pdf`
     );
-    createPlaceholderPDF(`discounts-report-${timestamp}.pdf`);
+    await createPDFReport(
+      `discounts-report-${timestamp}.pdf`,
+      "discounts",
+      data
+    );
     sectionReports.discounts = discountsPath;
   }
 
-  // Log report information
-  console.log(`Created main report: ${mainPath}`);
-  console.log(
-    `Created section reports: ${Object.keys(sectionReports).join(", ")}`
-  );
+  if (data.data?.collections) {
+    const collectionsPath = path.join(
+      tempDir,
+      `collections-report-${timestamp}.pdf`
+    );
+    await createPDFReport(
+      `collections-report-${timestamp}.pdf`,
+      "collections",
+      data
+    );
+    sectionReports.collections = collectionsPath;
+  }
 
   // Extract domain from websiteUrl for folder name
   const websiteDomain = websiteUrl.replace(/^https?:\/\//, "").split("/")[0];
@@ -487,21 +808,38 @@ async function createSyncReport(
   await deleteOldShopifyReports(websiteDomain, websiteId);
 
   // Upload main report to S3
-  const mainReportResult = await uploadPdfToS3(
-    mainPath,
-    websiteDomain,
-    `sync-report-${timestamp}.pdf`
-  );
-  s3Reports.main = mainReportResult;
+  try {
+    const mainFilePath = path.join(tempDir, `sync-report-${timestamp}.pdf`);
+    if (fs.existsSync(mainFilePath)) {
+      const mainReportResult = await uploadPdfToS3(
+        mainFilePath,
+        websiteDomain,
+        `sync-report-${timestamp}.pdf`
+      );
+      s3Reports.main = mainReportResult;
+    } else {
+      console.error(`Main report file not found at ${mainFilePath}`);
+    }
+  } catch (error) {
+    console.error("Error uploading main report:", error);
+  }
 
   // Upload section reports to S3
   for (const [section, reportPath] of Object.entries(sectionReports)) {
-    const fileName = path.basename(reportPath);
-    const fullPath = path.join(tempDir, fileName);
-
-    if (fs.existsSync(fullPath)) {
-      const s3Result = await uploadPdfToS3(fullPath, websiteDomain, fileName);
-      s3Reports[section] = s3Result;
+    try {
+      if (fs.existsSync(reportPath)) {
+        const fileName = path.basename(reportPath);
+        const s3Result = await uploadPdfToS3(
+          reportPath,
+          websiteDomain,
+          fileName
+        );
+        s3Reports[section] = s3Result;
+      } else {
+        console.error(`Section report file not found at ${reportPath}`);
+      }
+    } catch (error) {
+      console.error(`Error uploading ${section} report:`, error);
     }
   }
 
@@ -1135,7 +1473,7 @@ export async function POST(request: NextRequest) {
           sections: {
             products: s3Reports.products,
             pages: s3Reports.pages,
-            blogs: s3Reports.blogs,
+            blogs: s3Reports.posts,
             collections: s3Reports.collections,
             discounts: s3Reports.discounts,
           },
