@@ -149,32 +149,42 @@ function formatDate(date: Date): string {
 
 async function scrapeUrl(url: string): Promise<string> {
   try {
+    console.log(`Scraping content from URL: ${url}`);
     const response = await axios.get(url);
     const $ = cheerio.load(response.data);
 
-    // Remove unnecessary elements to clean up the content
-    $("svg").remove();
-    $("style").remove();
-    $('link[rel="stylesheet"]').remove();
-    $("script").remove(); // Remove scripts
+    // Only remove scripts, styles, and SVGs but keep structure and content
+    $("script").remove(); // Remove all scripts
+    $("style").remove(); // Remove style tags
+    $("svg").remove(); // Remove SVG elements
+    $("link[rel='stylesheet']").remove(); // Remove CSS
 
-    // Fix any broken images to prevent issues in PDF
+    // Replace images with their alt text or placeholders
     $("img").each((_, img) => {
       const $img = $(img);
-      const src = $img.attr("src");
-      if (!src || src.startsWith("data:")) {
-        $img.remove();
-      }
+      const alt = $img.attr("alt") || "[Image]";
+      $img.replaceWith(`<div class="image-placeholder">${alt}</div>`);
     });
 
-    // Get the entire body HTML content
-    // This preserves all element IDs for fragment identifiers (#theID)
-    const bodyContent = $("body").html() || "";
+    // Get the main content area if it exists, otherwise use body
+    let content = "";
+    const mainContent = $(
+      "#MainContent, #main-content, main, .main-content, article"
+    );
 
-    return bodyContent;
+    if (mainContent.length > 0) {
+      // Use the first main content area found
+      content = $(mainContent[0]).html() || "";
+    } else {
+      // Fallback to body content
+      content = $("body").html() || "";
+    }
+
+    console.log(`Successfully scraped content (${content.length} chars)`);
+    return content;
   } catch (error) {
     console.error(`Error scraping ${url}:`, error);
-    return "";
+    return `Failed to retrieve content from ${url}`;
   }
 }
 
@@ -442,7 +452,8 @@ async function createSyncReport(
               content += `Products (${data.data.products.length}):\n\n`;
 
               // List all products
-              data.data.products.forEach((product, index) => {
+              for (let index = 0; index < data.data.products.length; index++) {
+                const product = data.data.products[index];
                 content += `${index + 1}. ${
                   product.title || "Untitled Product"
                 }\n`;
@@ -450,13 +461,29 @@ async function createSyncReport(
                 content += `   Vendor: ${product.vendor || "N/A"}\n`;
                 content += `   Type: ${product.productType || "N/A"}\n`;
 
-                // Product description
+                // Attempt to scrape the product page content
+                let productContent = "";
+                if (product.handle) {
+                  const productUrl = `${data.data.shop.primaryDomain?.url}/products/${product.handle}`;
+                  try {
+                    console.log(
+                      `Attempting to scrape product page: ${productUrl}`
+                    );
+                    productContent = await scrapeUrl(productUrl);
+                    content += `   Product Page Content Available: Yes\n`;
+                  } catch (error) {
+                    console.error(
+                      `Error scraping product URL ${productUrl}:`,
+                      error
+                    );
+                    content += `   Product Page Content Available: No (Error)\n`;
+                  }
+                }
+
+                // Product description from API data
                 if (product.description) {
-                  const cleanDescription = stripHtml(product.description);
-                  content += `   Description: ${cleanDescription.substring(
-                    0,
-                    200
-                  )}${cleanDescription.length > 200 ? "..." : ""}\n`;
+                  content += `   Description:\n`;
+                  content += `   ${product.description}\n\n`;
                 }
 
                 // Variants
@@ -480,8 +507,15 @@ async function createSyncReport(
                     .join(", ")}\n`;
                 }
 
+                // Add the scraped content if available
+                if (productContent) {
+                  content += "\n   --- SCRAPED PRODUCT PAGE CONTENT ---\n\n";
+                  content += productContent + "\n\n";
+                  content += "   --- END SCRAPED CONTENT ---\n\n";
+                }
+
                 content += "\n";
-              });
+              }
             } else {
               content += "No products found.\n";
             }
@@ -492,25 +526,40 @@ async function createSyncReport(
               content += `Pages (${data.data.pages.length}):\n\n`;
 
               // List all pages
-              data.data.pages.forEach((page, index) => {
+              for (let index = 0; index < data.data.pages.length; index++) {
+                const page = data.data.pages[index];
                 content += `${index + 1}. ${page.title || "Untitled Page"}\n`;
                 content += `   Handle: ${page.handle || "N/A"}\n`;
 
-                // Add content preview (limited to avoid overwhelming the PDF)
+                // Attempt to scrape the page content
+                let pageContent = "";
+                if (page.handle) {
+                  const pageUrl = `${data.data.shop.primaryDomain?.url}/pages/${page.handle}`;
+                  try {
+                    console.log(`Attempting to scrape page: ${pageUrl}`);
+                    pageContent = await scrapeUrl(pageUrl);
+                    content += `   Page Content Available: Yes\n`;
+                  } catch (error) {
+                    console.error(`Error scraping page URL ${pageUrl}:`, error);
+                    content += `   Page Content Available: No (Error)\n`;
+                  }
+                }
+
+                // Add API content data
                 if (page.content) {
-                  content += "   Content Preview:\n";
-                  // Strip HTML tags for readable text
-                  const contentPreview = stripHtml(page.content).substring(
-                    0,
-                    200
-                  );
-                  content += `   ${contentPreview}${
-                    page.content.length > 200 ? "..." : ""
-                  }\n`;
+                  content += "   API Content Data:\n";
+                  content += `   ${page.content}\n\n`;
+                }
+
+                // Add the scraped content if available
+                if (pageContent) {
+                  content += "\n   --- SCRAPED PAGE CONTENT ---\n\n";
+                  content += pageContent + "\n\n";
+                  content += "   --- END SCRAPED CONTENT ---\n\n";
                 }
 
                 content += "\n";
-              });
+              }
             } else {
               content += "No pages found.\n";
             }
@@ -521,36 +570,63 @@ async function createSyncReport(
               content += `Blogs (${data.data.blogs.length}):\n\n`;
 
               // List all blogs
-              data.data.blogs.forEach((blog, index) => {
+              for (let index = 0; index < data.data.blogs.length; index++) {
+                const blog = data.data.blogs[index];
                 content += `${index + 1}. ${blog.title || "Untitled Blog"}\n`;
                 content += `   Handle: ${blog.handle || "N/A"}\n`;
 
                 // Blog posts
                 if (blog.posts && blog.posts.length > 0) {
                   content += `   Posts (${blog.posts.length}):\n`;
-                  blog.posts.forEach((post) => {
+
+                  for (
+                    let postIndex = 0;
+                    postIndex < blog.posts.length;
+                    postIndex++
+                  ) {
+                    const post = blog.posts[postIndex];
                     content += `     - ${post.title || "Untitled Post"} by ${
                       post.author || "Unknown"
                     }\n`;
 
-                    // Add content preview (limited to avoid overwhelming the PDF)
-                    if (post.content) {
-                      // Strip HTML tags for readable text
-                      const contentPreview = stripHtml(post.content).substring(
-                        0,
-                        100
-                      );
-                      content += `       ${contentPreview}${
-                        post.content.length > 100 ? "..." : ""
-                      }\n`;
+                    // Attempt to scrape the blog post content
+                    let postContent = "";
+                    if (blog.handle && post.handle) {
+                      const postUrl = `${data.data.shop.primaryDomain?.url}/blogs/${blog.handle}/${post.handle}`;
+                      try {
+                        console.log(
+                          `Attempting to scrape blog post: ${postUrl}`
+                        );
+                        postContent = await scrapeUrl(postUrl);
+                        content += `       Post Content Available: Yes\n`;
+                      } catch (error) {
+                        console.error(
+                          `Error scraping post URL ${postUrl}:`,
+                          error
+                        );
+                        content += `       Post Content Available: No (Error)\n`;
+                      }
                     }
-                  });
+
+                    // Add API content data
+                    if (post.content) {
+                      content += "       API Content Data:\n";
+                      content += `       ${post.content}\n\n`;
+                    }
+
+                    // Add the scraped content if available
+                    if (postContent) {
+                      content += "\n       --- SCRAPED POST CONTENT ---\n\n";
+                      content += postContent + "\n\n";
+                      content += "       --- END SCRAPED CONTENT ---\n\n";
+                    }
+                  }
                 } else {
                   content += "   No posts found in this blog.\n";
                 }
 
                 content += "\n";
-              });
+              }
             } else {
               content += "No blogs found.\n";
             }
@@ -561,7 +637,12 @@ async function createSyncReport(
               content += `Collections (${data.data.collections.length}):\n\n`;
 
               // List all collections
-              data.data.collections.forEach((collection, index) => {
+              for (
+                let index = 0;
+                index < data.data.collections.length;
+                index++
+              ) {
+                const collection = data.data.collections[index];
                 content += `${index + 1}. ${
                   collection.title || "Untitled Collection"
                 }\n`;
@@ -569,7 +650,26 @@ async function createSyncReport(
                 content += `   Sort Order: ${collection.sortOrder || "N/A"}\n`;
                 content += `   Updated At: ${collection.updatedAt || "N/A"}\n`;
 
-                // Collection description
+                // Attempt to scrape the collection page content
+                let collectionContent = "";
+                if (collection.handle) {
+                  const collectionUrl = `${data.data.shop.primaryDomain?.url}/collections/${collection.handle}`;
+                  try {
+                    console.log(
+                      `Attempting to scrape collection page: ${collectionUrl}`
+                    );
+                    collectionContent = await scrapeUrl(collectionUrl);
+                    content += `   Collection Page Content Available: Yes\n`;
+                  } catch (error) {
+                    console.error(
+                      `Error scraping collection URL ${collectionUrl}:`,
+                      error
+                    );
+                    content += `   Collection Page Content Available: No (Error)\n`;
+                  }
+                }
+
+                // Collection description from API
                 if (collection.description) {
                   content += `   Description: ${collection.description}\n`;
                 }
@@ -602,8 +702,15 @@ async function createSyncReport(
                   });
                 }
 
+                // Add the scraped content if available
+                if (collectionContent) {
+                  content += "\n   --- SCRAPED COLLECTION PAGE CONTENT ---\n\n";
+                  content += collectionContent + "\n\n";
+                  content += "   --- END SCRAPED CONTENT ---\n\n";
+                }
+
                 content += "\n";
-              });
+              }
             } else {
               content += "No collections found.\n";
             }
