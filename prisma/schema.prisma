@@ -76,6 +76,8 @@ model Website {
   WordpressTag             WordpressTag[]
   VectorDbConfig           VectorDbConfig?
   ShopifyBlogPost          ShopifyBlogPost[]
+  ShopifyCollection        ShopifyCollection[]
+  reportLinks              ShopifyReportLink[]
 
   @@unique([userId, url, type])
   @@index([userId])
@@ -553,4 +555,33 @@ model WordpressProductToWordpressProductTag {
   @@unique([A, B], map: "_WordpressProductToWordpressProductTag_AB_unique")
   @@index([B], map: "_WordpressProductToWordpressProductTag_B_index")
   @@map("_WordpressProductToWordpressProductTag")
+}
+
+model ShopifyCollection {
+  id          String    @id @default(uuid())
+  handle      String
+  title       String
+  description String?
+  ruleSet     Json?
+  sortOrder   String?
+  updatedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  websiteId   String
+  website     Website   @relation(fields: [websiteId], references: [id])
+
+  @@unique([websiteId, handle])
+  @@index([websiteId])
+}
+
+model ShopifyReportLink {
+  id         String   @id @default(uuid())
+  websiteId  String
+  reportType String // "main", "products", "pages", "blogs", "collections", "discounts"
+  s3Key      String // Full S3 key path
+  s3Url      String // Complete URL to access the report
+  createdAt  DateTime @default(now())
+  website    Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@unique([websiteId, reportType])
+  @@index([websiteId])
 }

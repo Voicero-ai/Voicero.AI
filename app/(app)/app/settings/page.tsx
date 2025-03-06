@@ -323,16 +323,59 @@ export default function Settings() {
     setIsDeleting(true);
 
     try {
-      const response = await fetch(`/api/websites/delete-website`, {
+      // Step 1: Delete vectors
+      console.log("Deleting vectors...");
+      const vectorRes = await fetch("/api/websites/delete-vectors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ websiteId: websiteToDelete.id }),
+      });
+
+      if (!vectorRes.ok) {
+        const errorData = await vectorRes.json();
+        console.error("Vector deletion failed:", errorData);
+        throw new Error("Failed to delete vectors");
+      }
+
+      // Step 2: Delete content based on website type
+      if (websiteToDelete.type === "wordPress") {
+        console.log("Deleting WordPress content...");
+        const wpRes = await fetch("/api/websites/delete-wordpress-content", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ websiteId: websiteToDelete.id }),
+        });
+
+        if (!wpRes.ok) {
+          const errorData = await wpRes.json();
+          console.error("WordPress content deletion failed:", errorData);
+          throw new Error("Failed to delete WordPress content");
+        }
+      } else if (websiteToDelete.type === "shopify") {
+        console.log("Deleting Shopify content...");
+        const shopifyRes = await fetch("/api/websites/delete-shopify-content", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ websiteId: websiteToDelete.id }),
+        });
+
+        if (!shopifyRes.ok) {
+          const errorData = await shopifyRes.json();
+          console.error("Shopify content deletion failed:", errorData);
+          throw new Error("Failed to delete Shopify content");
+        }
+      }
+
+      // Step 3: Delete website
+      console.log("Deleting website...");
+      const websiteRes = await fetch(`/api/websites/delete-website`, {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: websiteToDelete.id }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
+      if (!websiteRes.ok) {
+        const errorData = await websiteRes.json();
         if (
           errorData?.error === "Cannot delete website with active subscription"
         ) {
@@ -340,7 +383,7 @@ export default function Settings() {
           setShowSubscriptionWarning(true);
           return;
         }
-        throw new Error(errorData?.error || "Failed to delete website");
+        throw new Error("Failed to delete website");
       }
 
       // Update local state to remove the deleted website
@@ -348,7 +391,7 @@ export default function Settings() {
       setShowDeleteModal(false);
       setWebsiteToDelete(null);
     } catch (error) {
-      console.error("Error deleting website:", error);
+      console.error("Error during deletion process:", error);
       // You might want to show an error message to the user here
     } finally {
       setIsDeleting(false);
@@ -647,7 +690,7 @@ export default function Settings() {
                       <p className="text-sm text-brand-text-secondary">
                         {site.name} • {site.type} • {site.plan} Plan
                       </p>
-                      {site.plan === "free" ? null : (
+                      {site.plan === "free" || site.plan === "Free" ? null : (
                         <p className="text-sm text-brand-text-secondary">
                           Renews on{" "}
                           {new Date(site.renewsOn).toLocaleDateString()}

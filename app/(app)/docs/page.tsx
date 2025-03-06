@@ -167,7 +167,7 @@ export default function Docs() {
           </Link>
 
           <a
-            href="tel:+1234567890"
+            href="tel:+17206122979"
             className="flex items-center gap-3 p-4 rounded-lg hover:bg-brand-lavender-light/5 transition-colors"
           >
             <FaPhone className="w-5 h-5 text-brand-accent" />
@@ -176,13 +176,13 @@ export default function Docs() {
                 Call Support
               </h3>
               <p className="text-sm text-brand-text-secondary">
-                +1 (234) 567-890
+                +1 (720) 612-2979
               </p>
             </div>
           </a>
 
           <a
-            href="mailto:support@example.com"
+            href="mailto:support@voicero.ai"
             className="flex items-center gap-3 p-4 rounded-lg hover:bg-brand-lavender-light/5 transition-colors"
           >
             <FaEnvelope className="w-5 h-5 text-brand-accent" />
@@ -191,7 +191,7 @@ export default function Docs() {
                 Email Support
               </h3>
               <p className="text-sm text-brand-text-secondary">
-                support@example.com
+                support@voicero.ai
               </p>
             </div>
           </a>

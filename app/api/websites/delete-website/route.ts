@@ -4,69 +4,136 @@ export const dynamic = "force-dynamic";
 
 const prisma = new PrismaClient();
 
-// Get the base URL from environment variable or default to localhost
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-
 export async function DELETE(request: Request) {
   try {
     const { id } = await request.json();
-    console.log(`Starting website deletion process for ID: ${id}`);
-    console.log(`Using base URL: ${baseUrl}`);
+    console.log(`Deleting website with ID: ${id}`);
 
-    // Delete vectors
-    console.log("Calling vector deletion endpoint...");
-    try {
-      const vectorRes = await fetch("/api/websites/delete-vectors", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ websiteId: id }),
-      });
-
-      if (!vectorRes.ok) {
-        const errorData = await vectorRes.json().catch(() => null);
-        console.error("Vector deletion failed:", {
-          status: vectorRes.status,
-          statusText: vectorRes.statusText,
-          errorData,
+    // First transaction: Delete dependent content
+    await prisma.$transaction(
+      async (tx) => {
+        // Delete PopUpQuestions first
+        await tx.popUpQuestion.deleteMany({
+          where: { websiteId: id },
         });
-        throw new Error(
-          `Failed to delete vectors: ${vectorRes.status} ${vectorRes.statusText}`
-        );
+        console.log("Deleted PopUpQuestions");
+
+        // Delete AccessKeys
+        await tx.accessKey.deleteMany({
+          where: { websiteId: id },
+        });
+        console.log("Deleted AccessKeys");
+
+        // Delete AI related content
+        await tx.aiMessage.deleteMany({
+          where: {
+            thread: {
+              websiteId: id,
+            },
+          },
+        });
+        console.log("Deleted AI Messages");
+
+        await tx.aiThread.deleteMany({
+          where: { websiteId: id },
+        });
+        console.log("Deleted AI Threads");
+
+        // Delete VectorDbConfig
+        await tx.vectorDbConfig.deleteMany({
+          where: { websiteId: id },
+        });
+        console.log("Deleted VectorDbConfig");
+      },
+      {
+        timeout: 10000, // 10 second timeout for first transaction
       }
+    );
 
-      console.log("Vector deletion successful");
-    } catch (vectorError) {
-      console.error("Error during vector deletion:", vectorError);
-      // Continue with the rest of the deletion process
-      console.log("Continuing with deletion despite vector error...");
-    }
+    // Second transaction: Delete Shopify content
+    await prisma.$transaction(
+      async (tx) => {
+        // Delete any remaining Shopify content
+        // Comments depend on blog posts
+        await tx.shopifyComment.deleteMany({
+          where: {
+            post: {
+              websiteId: id,
+            },
+          },
+        });
+        console.log("Deleted remaining Shopify comments");
 
-    // Delete WordPress content
-    console.log("Calling WordPress content deletion endpoint...");
-    const wpRes = await fetch("/api/websites/delete-wordpress-content", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ websiteId: id }),
-    });
+        await tx.shopifyBlogPost.deleteMany({
+          where: { websiteId: id },
+        });
+        console.log("Deleted remaining Shopify blog posts");
 
-    if (!wpRes.ok) {
-      const errorData = await wpRes.json().catch(() => null);
-      console.error("WordPress deletion failed:", {
-        status: wpRes.status,
-        statusText: wpRes.statusText,
-        errorData,
-      });
-      throw new Error("Failed to delete WordPress content");
-    }
+        await tx.shopifyBlog.deleteMany({
+          where: { websiteId: id },
+        });
+        console.log("Deleted remaining Shopify blogs");
 
-    console.log("WordPress content deletion successful");
+        // Delete product-related content
+        await tx.shopifyReview.deleteMany({
+          where: {
+            product: {
+              websiteId: id,
+            },
+          },
+        });
+        console.log("Deleted remaining Shopify reviews");
 
-    // Finally delete the website
-    console.log("Deleting website from database...");
-    await prisma.website.delete({
-      where: { id },
-    });
-    console.log("Website deleted successfully");
+        await tx.shopifyMedia.deleteMany({
+          where: {
+            product: {
+              websiteId: id,
+            },
+          },
+        });
+        console.log("Deleted remaining Shopify media");
+
+        await tx.shopifyProductVariant.deleteMany({
+          where: {
+            product: {
+              websiteId: id,
+            },
+          },
+        });
+        console.log("Deleted remaining Shopify product variants");
+
+        await tx.shopifyProduct.deleteMany({
+          where: { websiteId: id },
+        });
+        console.log("Deleted remaining Shopify products");
+
+        await tx.shopifyDiscount.deleteMany({
+          where: { websiteId: id },
+        });
+        console.log("Deleted remaining Shopify discounts");
+
+        await tx.shopifyPage.deleteMany({
+          where: { websiteId: id },
+        });
+        console.log("Deleted remaining Shopify pages");
+      },
+      {
+        timeout: 10000, // 10 second timeout for second transaction
+      }
+    );
+
+    // Final transaction: Delete the website itself
+    await prisma.$transaction(
+      async (tx) => {
+        await tx.website.delete({
+          where: { id },
+        });
+        console.log("Website deleted successfully");
+      },
+      {
+        timeout: 5000, // 5 second timeout for final transaction
+      }
+    );
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

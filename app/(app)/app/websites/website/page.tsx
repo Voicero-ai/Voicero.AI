@@ -190,7 +190,7 @@ export default function WebsiteSettings() {
     try {
       const type = websiteData.type?.toLowerCase() || "";
       const isWordPress =
-        type === "wordpress" || type === "wp" || type.includes("wordpress");
+        type === "WordPress" || type === "wp" || type.includes("wordpress");
 
       if (isWordPress) {
         // WordPress logic remains the same
@@ -717,7 +717,7 @@ export default function WebsiteSettings() {
     // Fix the type check to be case-insensitive and more robust
     const type = websiteData?.type?.toLowerCase() || "";
     const isWordPress =
-      type === "wordpress" || type === "wp" || type.includes("wordpress");
+      type === "WordPress" || type === "wp" || type.includes("wordpress");
     const instructions = isWordPress
       ? setupInstructions.wordpress
       : setupInstructions.shopify;
