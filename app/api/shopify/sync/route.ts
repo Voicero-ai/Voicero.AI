@@ -683,21 +683,66 @@ async function createSyncReport(
         const font = await pdfDoc.embedFont(StandardFonts.Courier);
         const fontSize = 10;
         const lineHeight = fontSize * 1.2;
+        const maxWidth = 500; // Maximum width for text before wrapping
 
-        // Split content into lines and write to PDF
-        const lines = content.split("\n");
-        let y = 750; // Start position from top
+        // Function to wrap text
+        const wrapText = (text: string): string[] => {
+          // If text is empty or just whitespace, return as is
+          if (!text.trim()) return [text];
 
-        for (const line of lines) {
-          if (y < 50) {
-            // Add a new page if we're at the bottom
-            const newPage = pdfDoc.addPage([612, 792]);
-            newPage.setFont(font);
-            newPage.setFontSize(fontSize);
-            y = 750;
+          const words = text.split(" ");
+          const lines: string[] = [];
+          let currentLine = "";
+
+          for (const word of words) {
+            // Test if adding this word exceeds the max width
+            const testLine = currentLine ? `${currentLine} ${word}` : word;
+            const width = font.widthOfTextAtSize(testLine, fontSize);
+
+            if (width > maxWidth && currentLine) {
+              // Line would be too long, push current line and start a new one
+              lines.push(currentLine);
+              currentLine = word;
+            } else {
+              // Add word to current line
+              currentLine = testLine;
+            }
           }
 
-          page.drawText(line, {
+          // Add the final line
+          if (currentLine) {
+            lines.push(currentLine);
+          }
+
+          return lines;
+        };
+
+        // Process input content and create wrapped lines
+        const wrappedLines: string[] = [];
+        const inputLines = content.split("\n");
+
+        for (const line of inputLines) {
+          if (!line.trim()) {
+            // Keep empty lines as is
+            wrappedLines.push("");
+          } else {
+            // Wrap the line and add resulting lines
+            wrappedLines.push(...wrapText(line));
+          }
+        }
+
+        // Draw wrapped lines to PDF
+        let y = 750; // Start position from top
+        let currentPage = page;
+
+        for (const line of wrappedLines) {
+          if (y < 50) {
+            // Add a new page if we're at the bottom
+            currentPage = pdfDoc.addPage([612, 792]);
+            y = 750; // Reset y position for new page
+          }
+
+          currentPage.drawText(line, {
             x: 50,
             y: y,
             font: font,
