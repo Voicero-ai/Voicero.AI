@@ -4,8 +4,7 @@ import { Pinecone } from "@pinecone-database/pinecone";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { cors } from "../../../../lib/cors";
 
-// Add edge runtime configuration to use Vercel Edge Functions
-export const runtime = "edge";
+// Remove Edge Runtime directive
 export const dynamic = "force-dynamic";
 
 const prisma = new PrismaClient();
@@ -78,6 +77,18 @@ function cleanContent(content: string): string {
     .trim();
 }
 
+// Add a new function to process data in chunks
+async function processInChunks<T>(
+  items: T[],
+  chunkSize: number,
+  processor: (item: T) => Promise<void>
+): Promise<void> {
+  for (let i = 0; i < items.length; i += chunkSize) {
+    const chunk = items.slice(i, i + chunkSize);
+    await Promise.all(chunk.map(processor));
+  }
+}
+
 async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
   const stats: VectorizeStats = {
     added: 0,
@@ -121,12 +132,13 @@ async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
       where: { websiteId },
     });
 
-    // Add products to vector store
-    for (const product of products) {
+    // Process products in chunks of 5 at a time (adjust as needed)
+    const processProduct = async (product: any) => {
       try {
         const variantInfo = product.variants
           .map(
-            (v) => `${v.title}: $${v.price}${v.sku ? ` (SKU: ${v.sku})` : ""}`
+            (v: any) =>
+              `${v.title}: $${v.price}${v.sku ? ` (SKU: ${v.sku})` : ""}`
           )
           .join("\n");
 
@@ -152,7 +164,7 @@ async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
               vendor: product.vendor,
               productType: product.productType,
               variants: JSON.stringify(
-                product.variants.map((v) => ({
+                product.variants.map((v: any) => ({
                   title: v.title,
                   price: v.price,
                   sku: v.sku,
@@ -161,62 +173,77 @@ async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
               websiteId,
               dbId: product.id,
               productId: product.shopifyId.toString(),
-              reviewIds: product.reviews.map((r) => `review-${r.shopifyId}`),
+              reviewIds: product.reviews.map(
+                (r: any) => `review-${r.shopifyId}`
+              ),
             },
           },
         ]);
         stats.added++;
         stats.details.added.push(`product-${product.shopifyId}`);
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Error vectorizing product ${product.shopifyId}:`, error);
         stats.errors++;
         stats.details.errors.push({
           id: `product-${product.shopifyId}`,
-          error: error instanceof Error ? error.message : String(error),
+          error: error.message,
         });
       }
-    }
+    };
 
-    // Add product reviews
-    for (const product of products) {
-      for (const review of product.reviews) {
-        try {
-          const reviewText = `Review of ${product.title}: ${review.title}\n${review.body}`;
-          const embedding = await createEmbedding(reviewText);
+    // Process in chunks
+    await processInChunks(products, 5, processProduct);
 
-          await index.namespace(websiteId).upsert([
-            {
-              id: `review-${review.shopifyId}`,
-              values: embedding,
-              metadata: {
-                type: "review",
-                productTitle: product.title,
-                productId: product.shopifyId.toString(),
-                reviewer: review.reviewer,
-                rating: review.rating,
-                title: review.title,
-                body: review.body,
-                verified: review.verified,
-                websiteId,
-                createdAt: review.createdAt.toISOString(),
-              },
-            },
-          ]);
-          stats.added++;
-          stats.details.added.push(`review-${review.shopifyId}`);
-        } catch (error) {
-          console.error(`Error vectorizing review ${review.shopifyId}:`, error);
-          stats.errors++;
-          stats.details.errors.push({
+    // Process reviews in chunks
+    const allReviews = products.flatMap((product) =>
+      product.reviews.map((review) => ({ review, product }))
+    );
+
+    const processReview = async ({
+      review,
+      product,
+    }: {
+      review: any;
+      product: any;
+    }) => {
+      try {
+        const reviewText = `Review of ${product.title}: ${review.title}\n${review.body}`;
+        const embedding = await createEmbedding(reviewText);
+
+        await index.namespace(websiteId).upsert([
+          {
             id: `review-${review.shopifyId}`,
-            error: error instanceof Error ? error.message : String(error),
-          });
-        }
+            values: embedding,
+            metadata: {
+              type: "review",
+              productTitle: product.title,
+              productId: product.shopifyId.toString(),
+              reviewer: review.reviewer,
+              rating: review.rating,
+              title: review.title,
+              body: review.body,
+              verified: review.verified,
+              websiteId,
+              createdAt: review.createdAt.toISOString(),
+            },
+          },
+        ]);
+        stats.added++;
+        stats.details.added.push(`review-${review.shopifyId}`);
+      } catch (error: any) {
+        console.error(`Error vectorizing review ${review.shopifyId}:`, error);
+        stats.errors++;
+        stats.details.errors.push({
+          id: `review-${review.shopifyId}`,
+          error: error.message,
+        });
       }
-    }
+    };
 
-    // Add pages
-    for (const page of pages) {
+    await processInChunks(allReviews, 10, processReview);
+
+    // Process pages in chunks
+    const processPage = async (page: any) => {
       try {
         const embedding = await createEmbedding(
           `${page.title}\n${page.content}`
@@ -233,113 +260,132 @@ async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
               handle: page.handle,
               websiteId,
               dbId: page.id,
+              pageId: page.shopifyId.toString(),
             },
           },
         ]);
         stats.added++;
         stats.details.added.push(`page-${page.shopifyId}`);
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Error vectorizing page ${page.shopifyId}:`, error);
         stats.errors++;
         stats.details.errors.push({
           id: `page-${page.shopifyId}`,
-          error: error instanceof Error ? error.message : String(error),
+          error: error.message,
         });
       }
-    }
+    };
 
-    // Add blog posts and comments
-    for (const blog of blogs) {
-      for (const post of blog.posts) {
-        try {
-          const embedding = await createEmbedding(
-            `${post.title}\n${post.content}`
-          );
+    await processInChunks(pages, 5, processPage);
 
-          await index.namespace(websiteId).upsert([
-            {
-              id: `blog-post-${post.shopifyId}`,
-              values: embedding,
-              metadata: {
-                type: "blog-post",
-                title: post.title,
-                content: cleanContent(post.content),
-                handle: post.handle,
-                author: post.author,
-                blogTitle: blog.title,
-                websiteId,
-                dbId: post.id,
-                blogId: blog.id,
-                image: post.image || "",
-              },
-            },
-          ]);
-          stats.added++;
-          stats.details.added.push(`blog-post-${post.shopifyId}`);
+    // Process blog posts in chunks
+    // First, flatten the blog posts
+    const allBlogPosts = blogs.flatMap((blog) =>
+      blog.posts.map((post) => ({ post, blog }))
+    );
 
-          // Add comments for this post
-          for (const comment of post.comments) {
-            try {
-              const commentEmbedding = await createEmbedding(
-                `Comment on "${post.title}": ${comment.body}`
-              );
-
-              await index.namespace(websiteId).upsert([
-                {
-                  id: `comment-${comment.shopifyId}`,
-                  values: commentEmbedding,
-                  metadata: {
-                    type: "comment",
-                    content: comment.body,
-                    author: comment.author,
-                    postTitle: post.title,
-                    blogTitle: blog.title,
-                    websiteId,
-                    postId: post.shopifyId,
-                    status: comment.status,
-                    createdAt: comment.createdAt.toISOString(),
-                  },
-                },
-              ]);
-              stats.added++;
-              stats.details.added.push(`comment-${comment.shopifyId}`);
-            } catch (error) {
-              console.error(
-                `Error vectorizing comment ${comment.shopifyId}:`,
-                error
-              );
-              stats.errors++;
-              stats.details.errors.push({
-                id: `comment-${comment.shopifyId}`,
-                error: error instanceof Error ? error.message : String(error),
-              });
-            }
-          }
-        } catch (error) {
-          console.error(
-            `Error vectorizing blog post ${post.shopifyId}:`,
-            error
-          );
-          stats.errors++;
-          stats.details.errors.push({
-            id: `blog-post-${post.shopifyId}`,
-            error: error instanceof Error ? error.message : String(error),
-          });
-        }
-      }
-    }
-
-    // Add discounts
-    for (const discount of discounts) {
+    const processBlogPost = async ({
+      post,
+      blog,
+    }: {
+      post: any;
+      blog: any;
+    }) => {
       try {
-        const discountText = `
-          ${discount.title}
-          Type: ${discount.type}
-          Code: ${discount.code || "Automatic"}
-          Value: ${discount.value}
-          ${discount.appliesTo ? `Applies to: ${discount.appliesTo}` : ""}
-        `.trim();
+        const postText = `${blog.title} - ${post.title}\n${post.content}`;
+        const embedding = await createEmbedding(postText);
 
+        await index.namespace(websiteId).upsert([
+          {
+            id: `post-${post.shopifyId}`,
+            values: embedding,
+            metadata: {
+              type: "post",
+              blogTitle: blog.title,
+              blogHandle: blog.handle,
+              title: post.title,
+              content: cleanContent(post.content),
+              author: post.author,
+              handle: post.handle,
+              websiteId,
+              dbId: post.id,
+              postId: post.shopifyId.toString(),
+              blogId: blog.shopifyId.toString(),
+              commentIds: post.comments.map(
+                (c: any) => `comment-${c.shopifyId}`
+              ),
+            },
+          },
+        ]);
+        stats.added++;
+        stats.details.added.push(`post-${post.shopifyId}`);
+      } catch (error: any) {
+        console.error(`Error vectorizing post ${post.shopifyId}:`, error);
+        stats.errors++;
+        stats.details.errors.push({
+          id: `post-${post.shopifyId}`,
+          error: error.message,
+        });
+      }
+    };
+
+    await processInChunks(allBlogPosts, 5, processBlogPost);
+
+    // Process blog comments in chunks
+    const allComments = allBlogPosts.flatMap(({ post, blog }) =>
+      post.comments.map((comment) => ({ comment, post, blog }))
+    );
+
+    const processComment = async ({
+      comment,
+      post,
+      blog,
+    }: {
+      comment: any;
+      post: any;
+      blog: any;
+    }) => {
+      try {
+        const commentText = `Comment on ${blog.title} - ${post.title}: ${comment.content}`;
+        const embedding = await createEmbedding(commentText);
+
+        await index.namespace(websiteId).upsert([
+          {
+            id: `comment-${comment.shopifyId}`,
+            values: embedding,
+            metadata: {
+              type: "comment",
+              blogTitle: blog.title,
+              postTitle: post.title,
+              content: cleanContent(comment.content),
+              author: comment.author,
+              email: comment.email,
+              websiteId,
+              dbId: comment.id,
+              commentId: comment.shopifyId.toString(),
+              postId: post.shopifyId.toString(),
+              blogId: blog.shopifyId.toString(),
+            },
+          },
+        ]);
+        stats.added++;
+        stats.details.added.push(`comment-${comment.shopifyId}`);
+      } catch (error: any) {
+        console.error(`Error vectorizing comment ${comment.shopifyId}:`, error);
+        stats.errors++;
+        stats.details.errors.push({
+          id: `comment-${comment.shopifyId}`,
+          error: error.message,
+        });
+      }
+    };
+
+    await processInChunks(allComments, 10, processComment);
+
+    // Process discounts in chunks
+    const processDiscount = async (discount: any) => {
+      try {
+        const discountText = `${discount.title}\n${discount.summary}\nCode: ${discount.code}`;
         const embedding = await createEmbedding(discountText);
 
         await index.namespace(websiteId).upsert([
@@ -349,21 +395,17 @@ async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
             metadata: {
               type: "discount",
               title: discount.title,
-              code: discount.code || "",
-              discountType: discount.type,
-              value: discount.value,
-              appliesTo: discount.appliesTo || "",
-              status: discount.status,
+              summary: discount.summary,
+              code: discount.code,
               websiteId,
               dbId: discount.id,
-              startsAt: discount.startsAt.toISOString(),
-              endsAt: discount.endsAt?.toISOString() || "",
+              discountId: discount.shopifyId.toString(),
             },
           },
         ]);
         stats.added++;
         stats.details.added.push(`discount-${discount.shopifyId}`);
-      } catch (error) {
+      } catch (error: any) {
         console.error(
           `Error vectorizing discount ${discount.shopifyId}:`,
           error
@@ -371,9 +413,16 @@ async function addToVectorStore(websiteId: string): Promise<VectorizeStats> {
         stats.errors++;
         stats.details.errors.push({
           id: `discount-${discount.shopifyId}`,
-          error: error instanceof Error ? error.message : String(error),
+          error: error.message,
         });
       }
+    };
+
+    await processInChunks(discounts, 5, processDiscount);
+
+    console.log(`✅ Added ${stats.added} vectors for website ${websiteId}`);
+    if (stats.errors > 0) {
+      console.log(`⚠️ Encountered ${stats.errors} errors during vectorization`);
     }
 
     // Update VectorDbConfig
@@ -405,98 +454,56 @@ export async function OPTIONS(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  let response;
+
   try {
     const authHeader = request.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json(
+      response = NextResponse.json(
         { error: "Missing or invalid authorization header" },
         { status: 401 }
       );
-    }
-
-    const accessKey = authHeader.split(" ")[1];
-    if (!accessKey) {
-      return NextResponse.json(
-        { error: "No access key provided" },
-        { status: 401 }
-      );
-    }
-
-    const website = await prisma.website.findFirst({
-      where: {
-        accessKeys: {
-          some: {
-            key: accessKey,
+    } else {
+      const accessKey = authHeader.split(" ")[1];
+      if (!accessKey) {
+        response = NextResponse.json(
+          { error: "No access key provided" },
+          { status: 401 }
+        );
+      } else {
+        const website = await prisma.website.findFirst({
+          where: {
+            accessKeys: {
+              some: {
+                key: accessKey,
+              },
+            },
           },
-        },
-      },
-    });
+        });
 
-    if (!website) {
-      return NextResponse.json(
-        { error: "Invalid access key" },
-        { status: 401 }
-      );
-    }
-
-    // Use streaming response for Edge Functions
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          // Send initial message
-          controller.enqueue(
-            encoder.encode(
-              JSON.stringify({
-                status: "started",
-                message: "Vectorization process started",
-                timestamp: new Date(),
-              }) + "\n"
-            )
+        if (!website) {
+          response = NextResponse.json(
+            { error: "Invalid access key" },
+            { status: 401 }
           );
-
-          // Run the vectorization process
+        } else {
           const stats = await addToVectorStore(website.id);
-
-          // Send final message with stats
-          controller.enqueue(
-            encoder.encode(
-              JSON.stringify({
-                status: "completed",
-                message: "Shopify content vectorized",
-                stats,
-                timestamp: new Date(),
-              }) + "\n"
-            )
-          );
-
-          controller.close();
-        } catch (error: any) {
-          controller.enqueue(
-            encoder.encode(
-              JSON.stringify({
-                status: "error",
-                message: error.message,
-                timestamp: new Date(),
-              }) + "\n"
-            )
-          );
-          controller.close();
+          response = NextResponse.json({
+            success: true,
+            message: "Shopify content vectorized",
+            stats,
+            timestamp: new Date(),
+          });
         }
-      },
-    });
-
-    // Return the stream response
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "application/json",
-        "Transfer-Encoding": "chunked",
-      },
-    });
+      }
+    }
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Unknown error occurred" },
+    response = NextResponse.json(
+      { error: "Vectorization failed", details: error.message },
       { status: 500 }
     );
   }
+
+  // Apply CORS headers to the response
+  return cors(request, response);
 }
