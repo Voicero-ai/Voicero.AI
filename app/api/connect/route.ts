@@ -12,27 +12,34 @@ export async function GET(request: NextRequest) {
   try {
     const response = new NextResponse();
 
-    // Get the authorization header
+    // Try to get token from Authorization header first
+    let accessKey = null;
     const authHeader = request.headers.get("authorization");
     console.log("Auth header received:", authHeader); // Debug log
 
-    if (!authHeader?.startsWith("Bearer ")) {
-      console.log("Invalid auth header format:", authHeader); // Debug log
-      return cors(
-        request,
-        NextResponse.json(
-          { error: "Missing or invalid authorization header" },
-          { status: 401 }
-        )
+    if (authHeader?.startsWith("Bearer ")) {
+      // Extract the access key from the header
+      accessKey = authHeader.split(" ")[1];
+      console.log(
+        "Access key from header:",
+        accessKey?.substring(0, 10) + "..."
       );
     }
 
-    // Extract the access key
-    const accessKey = authHeader.split(" ")[1];
-    console.log("Access key extracted:", accessKey?.substring(0, 10) + "..."); // Debug log
-
+    // If no valid header, try to get from URL params
     if (!accessKey) {
-      console.log("No access key found in header"); // Debug log
+      // Get the URL search params
+      const url = new URL(request.url);
+      accessKey = url.searchParams.get("access_token");
+      console.log(
+        "Access key from URL params:",
+        accessKey ? accessKey.substring(0, 10) + "..." : "none"
+      );
+    }
+
+    // If still no access key, return 401
+    if (!accessKey) {
+      console.log("No access key found in header or URL params");
       return cors(
         request,
         NextResponse.json({ error: "No access key provided" }, { status: 401 })
@@ -53,7 +60,7 @@ export async function GET(request: NextRequest) {
           select: {
             // WordPress counts
             pages: true,
-            posts: true, 
+            posts: true,
             products: true,
             // Shopify counts
             shopifyPages: true,
