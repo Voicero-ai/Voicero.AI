@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
           select: {
             // WordPress counts
             pages: true,
-            posts: true,
+            posts: true, 
             products: true,
             // Shopify counts
             shopifyPages: true,
@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
         },
         accessKeys: true,
         popUpQuestions: true,
+        VectorDbConfig: true,
       },
     });
 
@@ -94,6 +95,7 @@ export async function GET(request: NextRequest) {
           lastSyncedAt: website.lastSyncedAt,
           customInstructions: website.customInstructions,
           popUpQuestions: website.popUpQuestions,
+          VectorDbConfig: website.VectorDbConfig,
           _count:
             website.type === "WordPress"
               ? {
