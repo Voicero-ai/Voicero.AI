@@ -3,7 +3,11 @@ import { PrismaClient } from "@prisma/client";
 import { Pinecone } from "@pinecone-database/pinecone";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { cors } from "../../../../lib/cors";
+
+// Add edge runtime configuration to use Vercel Edge Functions
+export const runtime = "edge";
 export const dynamic = "force-dynamic";
+
 const prisma = new PrismaClient();
 const pinecone = new Pinecone({
   apiKey: process.env.PINECONE_API_KEY!,
@@ -401,56 +405,98 @@ export async function OPTIONS(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  let response;
-
   try {
     const authHeader = request.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      response = NextResponse.json(
+      return NextResponse.json(
         { error: "Missing or invalid authorization header" },
         { status: 401 }
       );
-    } else {
-      const accessKey = authHeader.split(" ")[1];
-      if (!accessKey) {
-        response = NextResponse.json(
-          { error: "No access key provided" },
-          { status: 401 }
-        );
-      } else {
-        const website = await prisma.website.findFirst({
-          where: {
-            accessKeys: {
-              some: {
-                key: accessKey,
-              },
-            },
-          },
-        });
-
-        if (!website) {
-          response = NextResponse.json(
-            { error: "Invalid access key" },
-            { status: 401 }
-          );
-        } else {
-          const stats = await addToVectorStore(website.id);
-          response = NextResponse.json({
-            success: true,
-            message: "Shopify content vectorized",
-            stats,
-            timestamp: new Date(),
-          });
-        }
-      }
     }
+
+    const accessKey = authHeader.split(" ")[1];
+    if (!accessKey) {
+      return NextResponse.json(
+        { error: "No access key provided" },
+        { status: 401 }
+      );
+    }
+
+    const website = await prisma.website.findFirst({
+      where: {
+        accessKeys: {
+          some: {
+            key: accessKey,
+          },
+        },
+      },
+    });
+
+    if (!website) {
+      return NextResponse.json(
+        { error: "Invalid access key" },
+        { status: 401 }
+      );
+    }
+
+    // Use streaming response for Edge Functions
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          // Send initial message
+          controller.enqueue(
+            encoder.encode(
+              JSON.stringify({
+                status: "started",
+                message: "Vectorization process started",
+                timestamp: new Date(),
+              }) + "\n"
+            )
+          );
+
+          // Run the vectorization process
+          const stats = await addToVectorStore(website.id);
+
+          // Send final message with stats
+          controller.enqueue(
+            encoder.encode(
+              JSON.stringify({
+                status: "completed",
+                message: "Shopify content vectorized",
+                stats,
+                timestamp: new Date(),
+              }) + "\n"
+            )
+          );
+
+          controller.close();
+        } catch (error: any) {
+          controller.enqueue(
+            encoder.encode(
+              JSON.stringify({
+                status: "error",
+                message: error.message,
+                timestamp: new Date(),
+              }) + "\n"
+            )
+          );
+          controller.close();
+        }
+      },
+    });
+
+    // Return the stream response
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "application/json",
+        "Transfer-Encoding": "chunked",
+      },
+    });
   } catch (error: any) {
-    response = NextResponse.json(
-      { error: "Vectorization failed", details: error.message },
+    return NextResponse.json(
+      { error: error.message || "Unknown error occurred" },
       { status: 500 }
     );
   }
-
-  // Apply CORS headers to the response
-  return cors(request, response);
 }

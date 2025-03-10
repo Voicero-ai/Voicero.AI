@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "app/api/shopify/vectorize/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}
