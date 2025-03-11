@@ -52,7 +52,7 @@ const socialLinks = [
   },
   {
     name: "Email",
-    href: "mailto:contact@voicero.ai",
+    href: "mailto:info@voicero.ai",
     icon: FaEnvelope,
   },
 ];
@@ -155,7 +155,7 @@ export default function Footer() {
               ))}
             </div>
             <p className="text-brand-dark/70 text-sm">
-              © {new Date().getFullYear()} Your Company. All rights reserved.
+              © {new Date().getFullYear()} Pronewer LLC. All rights reserved.
             </p>
           </div>
         </div>
