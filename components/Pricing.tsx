@@ -22,7 +22,7 @@ const plans = [
   },
   {
     name: "Growth",
-    price: "10",
+    price: "40",
     description: "Ideal for small to medium businesses",
     features: [
       "50,000 API calls/month",
