@@ -576,9 +576,9 @@ model ShopifyCollection {
 model ShopifyReportLink {
   id         String   @id @default(uuid())
   websiteId  String
-  reportType String // "main", "products", "pages", "blogs", "collections", "discounts"
-  s3Key      String // Full S3 key path
-  s3Url      String // Complete URL to access the report
+  reportType String
+  s3Key      String
+  s3Url      String
   createdAt  DateTime @default(now())
   website    Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
 

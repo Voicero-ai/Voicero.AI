@@ -14,7 +14,27 @@ const ses = new SESClient({
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json();
+    // Add safety check for request body
+    const body = await request.text();
+    if (!body) {
+      return NextResponse.json(
+        { error: "Empty request body" },
+        { status: 400 }
+      );
+    }
+
+    // Safely parse JSON with error handling
+    let data;
+    try {
+      data = JSON.parse(body);
+    } catch (parseError) {
+      return NextResponse.json(
+        { error: "Invalid JSON payload" },
+        { status: 400 }
+      );
+    }
+
+    const { email } = data;
 
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -50,9 +70,9 @@ export async function POST(request: Request) {
 
     // Send notification email using AWS SES
     const params = {
-      Source: "davidfales@voicero.ai",
+      Source: "info@voicero.ai",
       Destination: {
-        ToAddresses: ["davidfales@voicero.ai"],
+        ToAddresses: ["support@voicero.ai", "info@voicero.ai"],
       },
       Message: {
         Subject: {

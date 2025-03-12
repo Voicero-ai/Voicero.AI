@@ -35,9 +35,9 @@ export async function POST(request: Request) {
 
     // Send notification email using AWS SES
     const params = {
-      Source: "davidfales@voicero.ai",
+      Source: "info@voicero.ai",
       Destination: {
-        ToAddresses: ["davidfales@voicero.ai"],
+        ToAddresses: ["support@voicero.ai", "info@voicero.ai"],
       },
       Message: {
         Subject: {

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 export default function CompleteWebsitePage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams()!;
   const sessionId = searchParams.get("session_id");
   const [error, setError] = useState<string | null>(null);
 

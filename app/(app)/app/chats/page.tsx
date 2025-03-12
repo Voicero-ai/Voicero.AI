@@ -48,7 +48,7 @@ type SortOption = "recent" | "oldest" | "longest" | "shortest";
 type TimeRange = "all" | "last20" | "today" | "week" | "month";
 
 export default function Chats() {
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams()!;
   const websiteId = searchParams.get("website");
   const filterType = searchParams.get("type") as "voice" | "text" | null;
 
@@ -402,5 +402,3 @@ export default function Chats() {
     </div>
   );
 }
-
-

@@ -37,7 +37,7 @@ interface ChatSessionDetails {
 
 export default function ChatSession() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams()!;
   const sessionId = searchParams.get("id");
   const [session, setSession] = useState<ChatSessionDetails | null>(null);
   const [loading, setLoading] = useState(true);
