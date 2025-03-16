@@ -18,13 +18,13 @@ const teamMembers = [
     name: "Nolan Selby",
     role: "CEO & Co-Founder",
     image: "/images/nolan.jpeg",
-    bio: "Nolan is a seasoned entrepreneur with a passion for building scalable and efficient systems. He brings a wealth of experience in cloud infrastructure and AI development to the team.",
+    bio: "Nolan is an experienced e-commerce entrepreneur who has successfully built and scaled multiple online businesses. His expertise in conversion optimization and customer experience drives Voicero's mission to revolutionize e-commerce.",
   },
   {
     name: "David Fales",
     role: "CTO & Co-Founder",
     image: "/images/david.jpg",
-    bio: "David is a seasoned software engineer with a passion for building scalable and efficient systems. He brings a wealth of experience in cloud infrastructure and AI development to the team.",
+    bio: "David is a master developer with deep expertise in AI and software architecture. His technical leadership and innovative approach to solving complex problems form the foundation of Voicero's cutting-edge technology.",
   },
 ];
 
