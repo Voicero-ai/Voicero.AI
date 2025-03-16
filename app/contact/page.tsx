@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { FaEnvelope, FaPhone, FaMapMarkerAlt } from "react-icons/fa";
+import { FaEnvelope, FaMapMarkerAlt } from "react-icons/fa";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 
@@ -63,14 +63,12 @@ export default function Contact() {
               Get in Touch
             </h1>
             <p className="text-lg text-brand-text-secondary text-center mb-12">
-              Ready to transform your website with AI-powered voice navigation?
-              We&apos;d love to hear from you.
+              Have questions or inquiries about our AI chatbot solution? We&apos;re here to help!
             </p>
 
-            <div className="grid md:grid-cols-3 gap-8 mb-12">
+            <div className="grid md:grid-cols-2 gap-8 mb-12 max-w-2xl mx-auto">
               {[
                 { icon: FaEnvelope, title: "Email", info: "info@voicero.ai" },
-                { icon: FaPhone, title: "Phone", info: "+1 (720) 612-2979" },
                 {
                   icon: FaMapMarkerAlt,
                   title: "Location",
