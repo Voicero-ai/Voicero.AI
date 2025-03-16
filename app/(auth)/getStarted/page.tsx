@@ -4,8 +4,6 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaEnvelope, FaLock, FaUser, FaEye, FaEyeSlash } from "react-icons/fa";
 import Link from "next/link";
-import Footer from "../../../components/Footer";
-import Navbar from "../../../components/Navbar";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 
@@ -26,7 +24,7 @@ interface FormErrors {
   submit?: string;
 }
 
-export default function GetStarted() {
+export default function GetStartedPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
@@ -153,7 +151,6 @@ export default function GetStarted() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-brand-lavender-light/20 to-white">
-      <Navbar />
       <div className="container mx-auto px-4 py-28">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -407,7 +404,6 @@ export default function GetStarted() {
           </div>
         </motion.div>
       </div>
-      <Footer />
     </main>
   );
 }

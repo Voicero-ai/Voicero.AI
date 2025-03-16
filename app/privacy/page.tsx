@@ -2,12 +2,10 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import Navbar from "../../components/Navbar";
 
 export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-brand-lavender-light/5 to-white py-20">
-      <Navbar />
       <div className="container mx-auto px-4 py-8 max-w-4xl pt-20">
         <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>
 

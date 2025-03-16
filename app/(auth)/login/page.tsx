@@ -6,7 +6,6 @@ import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import Link from "next/link";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Navbar from "../../../components/Navbar";
 
 interface FormData {
   login: string;
@@ -67,7 +66,6 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-brand-lavender-light/5 to-white py-20">
-      <Navbar />
       <div className="container mx-auto px-4 py-28">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

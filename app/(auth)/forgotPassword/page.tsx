@@ -4,9 +4,8 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { FaEnvelope } from "react-icons/fa";
 import Link from "next/link";
-import Navbar from "../../../components/Navbar";
-import Footer from "../../../components/Footer";
-export default function ForgotPassword() {
+
+export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
@@ -22,7 +21,6 @@ export default function ForgotPassword() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-brand-lavender-light/20 to-white">
-      <Navbar />
       <div className="container mx-auto px-4 py-28">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -117,7 +115,6 @@ export default function ForgotPassword() {
           </div>
         </motion.div>
       </div>
-      <Footer />
     </main>
   );
 }
