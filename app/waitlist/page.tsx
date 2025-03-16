@@ -73,7 +73,7 @@ export default function WaitlistPage() {
     <div>
       <Navbar />
       <div className="relative min-h-screen bg-gradient-to-b from-brand-lavender-light/5 to-white flex flex-col items-center justify-center p-4 pt-20 overflow-hidden">
-        {/* Animated Background Elements */}
+        {/* Animated Background Elements - Adjusted for mobile */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -84,54 +84,54 @@ export default function WaitlistPage() {
             variants={pulseAnimation}
             initial="initial"
             animate="animate"
-            className="absolute top-20 left-10 w-64 h-64 bg-brand-accent/5 rounded-full blur-3xl"
+            className="absolute top-20 left-5 md:left-10 w-32 md:w-64 h-32 md:h-64 bg-brand-accent/5 rounded-full blur-3xl"
           />
           <motion.div
             variants={pulseAnimation}
             initial="initial"
             animate="animate"
-            className="absolute bottom-20 right-10 w-64 h-64 bg-brand-accent/5 rounded-full blur-3xl"
+            className="absolute bottom-20 right-5 md:right-10 w-32 md:w-64 h-32 md:h-64 bg-brand-accent/5 rounded-full blur-3xl"
           />
         </motion.div>
 
-        {/* Floating Icons */}
+        {/* Floating Icons - Adjusted for mobile */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <motion.div
             variants={floatingAnimation}
             initial="initial"
             animate="animate"
-            className="absolute top-[20%] left-[15%]"
+            className="absolute top-[20%] left-[5%] md:left-[15%]"
           >
-            <FaShopify className="text-brand-accent/20 w-12 h-12" />
+            <FaShopify className="text-brand-accent/20 w-8 h-8 md:w-12 md:h-12" />
           </motion.div>
           <motion.div
             variants={floatingAnimation}
             initial="initial"
             animate="animate"
             transition={{ delay: 1 }}
-            className="absolute top-[30%] right-[15%]"
+            className="absolute top-[30%] right-[5%] md:right-[15%]"
           >
-            <FaChartLine className="text-brand-accent/20 w-12 h-12" />
+            <FaChartLine className="text-brand-accent/20 w-8 h-8 md:w-12 md:h-12" />
           </motion.div>
           <motion.div
             variants={floatingAnimation}
             initial="initial"
             animate="animate"
             transition={{ delay: 2 }}
-            className="absolute bottom-[20%] left-[20%]"
+            className="absolute bottom-[20%] left-[10%] md:left-[20%]"
           >
-            <FaUsers className="text-brand-accent/20 w-12 h-12" />
+            <FaUsers className="text-brand-accent/20 w-8 h-8 md:w-12 md:h-12" />
           </motion.div>
         </div>
 
-        <div className="max-w-xl w-full text-center space-y-8 relative z-10">
+        <div className="max-w-xl w-full text-center space-y-6 md:space-y-8 relative z-10 px-4 md:px-0">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="space-y-4"
           >
-            <h1 className="text-4xl md:text-5xl font-bold text-brand-text-primary">
+            <h1 className="text-3xl md:text-5xl font-bold text-brand-text-primary">
               Boost Your Shopify Store's
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-accent to-[#9F5EF0] block mt-2">
                 Conversion Rate
@@ -141,10 +141,10 @@ export default function WaitlistPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.6 }}
-              className="text-xl text-brand-text-secondary"
+              className="text-lg md:text-xl text-brand-text-secondary px-2 md:px-0"
             >
               Join the waitlist for our AI chatbot that helps Shopify stores
-              <br className="hidden md:block" /> increase sales by up to 30%
+              {" "}increase sales by up to 30%
             </motion.p>
           </motion.div>
 
@@ -157,8 +157,8 @@ export default function WaitlistPage() {
             {/* Animated Border */}
             <div className="absolute -inset-[1px] bg-gradient-to-r from-brand-accent via-[#9F5EF0] to-brand-accent rounded-xl opacity-70 blur group-hover:opacity-100 transition-all duration-300" />
             
-            <div className="bg-white rounded-xl shadow-sm border border-brand-lavender-light/20 p-8 relative">
-              <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="bg-white rounded-xl shadow-sm border border-brand-lavender-light/20 p-4 md:p-8 relative">
+              <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <FaEnvelope className="text-brand-accent w-5 h-5" />
@@ -168,7 +168,7 @@ export default function WaitlistPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email address"
-                    className="w-full pl-12 pr-4 py-3 border border-brand-lavender-light/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-accent/20 transition-all"
+                    className="w-full pl-12 pr-4 py-3 border border-brand-lavender-light/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-accent/20 transition-all text-base md:text-lg"
                     required
                   />
                 </div>
@@ -176,7 +176,7 @@ export default function WaitlistPage() {
                 <button
                   type="submit"
                   disabled={status === "loading"}
-                  className={`w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg text-white font-medium transition-all
+                  className={`w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg text-white font-medium transition-all text-base md:text-lg
                   ${
                     status === "loading"
                       ? "bg-brand-accent/70 cursor-not-allowed"
@@ -224,22 +224,22 @@ export default function WaitlistPage() {
             className="text-brand-text-secondary space-y-2"
           >
             <p className="font-medium">Why join our waitlist?</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
               <motion.div
                 whileHover={{ scale: 1.02 }}
-                className="bg-white p-4 rounded-lg border border-brand-lavender-light/20"
+                className="bg-white p-3 md:p-4 rounded-lg border border-brand-lavender-light/20"
               >
                 <p>Early Access</p>
               </motion.div>
               <motion.div
                 whileHover={{ scale: 1.02 }}
-                className="bg-white p-4 rounded-lg border border-brand-lavender-light/20"
+                className="bg-white p-3 md:p-4 rounded-lg border border-brand-lavender-light/20"
               >
                 <p>Special Pricing</p>
               </motion.div>
               <motion.div
                 whileHover={{ scale: 1.02 }}
-                className="bg-white p-4 rounded-lg border border-brand-lavender-light/20"
+                className="bg-white p-3 md:p-4 rounded-lg border border-brand-lavender-light/20"
               >
                 <p>Priority Support</p>
               </motion.div>
