@@ -1,10 +1,12 @@
-import React from "react";
-import Navbar from "../../components/Navbar";
-import Footer from "../../components/Footer";
+"use client";
 
-const PrivacyPolicy = () => {
+import React from "react";
+import { motion } from "framer-motion";
+import Navbar from "../../components/Navbar";
+
+export default function PrivacyPolicy() {
   return (
-    <div>
+    <div className="min-h-screen bg-gradient-to-b from-brand-lavender-light/5 to-white py-20">
       <Navbar />
       <div className="container mx-auto px-4 py-8 max-w-4xl pt-20">
         <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>
@@ -155,9 +157,6 @@ const PrivacyPolicy = () => {
           <p className="font-semibold">Last Updated: March 1, 2025</p>
         </section>
       </div>
-      <Footer />
     </div>
   );
-};
-
-export default PrivacyPolicy;
+}

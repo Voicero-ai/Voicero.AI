@@ -7,7 +7,6 @@ import Link from "next/link";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Navbar from "../../../components/Navbar";
-import Footer from "../../../components/Footer";
 
 interface FormData {
   login: string;
@@ -67,7 +66,7 @@ const LoginPage = () => {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-brand-lavender-light/20 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-brand-lavender-light/5 to-white py-20">
       <Navbar />
       <div className="container mx-auto px-4 py-28">
         <motion.div
@@ -193,8 +192,7 @@ const LoginPage = () => {
           </div>
         </motion.div>
       </div>
-      <Footer />
-    </main>
+    </div>
   );
 };
 
