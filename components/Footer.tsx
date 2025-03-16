@@ -20,7 +20,7 @@ const footerLinks = {
   company: [
     { name: "About Us", href: "/about" },
     { name: "Waitlist", href: "/waitlist" },
-    { name: "FAQs", href: "/faqs" },
+    { name: "FAQ", href: "/faq" },
   ],
   resources: [
     { name: "Documentation", href: "/docs" },

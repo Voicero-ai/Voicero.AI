@@ -42,7 +42,7 @@ ChartJS.register(
 
 type ChartType = "realtime" | "predictive" | "performance";
 
-const chartOptions: ChartOptions<"line"> = {
+const baseChartOptions: ChartOptions<"line"> = {
   responsive: true,
   maintainAspectRatio: false,
   scales: {
@@ -51,6 +51,11 @@ const chartOptions: ChartOptions<"line"> = {
         display: true,
         color: "rgba(0, 0, 0, 0.05)",
       },
+      title: {
+        display: true,
+        text: "Year",
+        color: "rgba(0, 0, 0, 0.7)",
+      }
     },
     y: {
       grid: {
@@ -58,18 +63,78 @@ const chartOptions: ChartOptions<"line"> = {
         color: "rgba(0, 0, 0, 0.05)",
       },
       beginAtZero: true,
+      title: {
+        display: true,
+        text: "Value",
+        color: "rgba(0, 0, 0, 0.7)",
+      }
     },
   },
   plugins: {
     legend: {
-      display: false,
+      display: true,
+      position: 'top' as const,
     },
+    title: {
+      display: true,
+      text: "",
+      font: {
+        size: 16,
+        weight: 'bold'
+      }
+    },
+    tooltip: {
+      callbacks: {
+        label: function(context) {
+          let label = context.dataset.label || '';
+          if (label) {
+            label += ': ';
+          }
+          if (context.parsed.y !== null) {
+            if (context.dataset.label?.includes('Revenue')) {
+              label += '$' + context.parsed.y + 'B';
+            } else {
+              label += context.parsed.y + '%';
+            }
+          }
+          return label;
+        }
+      }
+    }
   },
   elements: {
     line: {
       tension: 0.4,
     },
+    point: {
+      radius: 5,
+      hoverRadius: 7,
+    }
   },
+};
+
+const getChartOptions = (type: ChartType): ChartOptions<"line"> => {
+  const options = JSON.parse(JSON.stringify(baseChartOptions));
+  
+  if (options.plugins?.title && options.scales?.x?.title && options.scales?.y?.title) {
+    switch (type) {
+      case "realtime":
+        options.plugins.title.text = "Cart Abandonment Rates Over Time";
+        options.scales.y.title.text = "Abandonment Rate (%)";
+        break;
+      case "predictive":
+        options.plugins.title.text = "Top Reasons for Lost Sales (2024)";
+        options.scales.y.title.text = "Percentage of Customers (%)";
+        options.scales.x.title.text = "Abandonment Reason";
+        break;
+      case "performance":
+        options.plugins.title.text = "Shopify Platform Growth";
+        options.scales.y.title.text = "Revenue (Billions USD)";
+        break;
+    }
+  }
+  
+  return options;
 };
 
 const features = [
@@ -113,11 +178,11 @@ const features = [
 
 const chartData: Record<ChartType, ChartData<"line">> = {
   realtime: {
-    labels: ["2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"],
+    labels: ["2019", "2020", "2021", "2022", "2023", "2024"],
     datasets: [
       {
-        label: "Market Growth (Billions USD)",
-        data: [2.5, 3.8, 5.2, 7.1, 9.4, 11.8, 13.2, 15.0],
+        label: "Cart Abandonment Rate (%)",
+        data: [77.13, 84.27, 81.08, 68.70, 79.53, 70.19],
         fill: true,
         backgroundColor: "rgba(126, 58, 242, 0.1)",
         borderColor: "rgba(126, 58, 242, 1)",
@@ -126,11 +191,11 @@ const chartData: Record<ChartType, ChartData<"line">> = {
     ],
   },
   predictive: {
-    labels: ["18-29", "30-44", "45-60", "60-75", "75+"],
+    labels: ["Extra Costs", "Account Creation", "Trust Issues", "Slow Delivery", "Complex Checkout"],
     datasets: [
       {
-        label: "Online Shopping Usage by Age Group (%)",
-        data: [92, 87, 78, 65, 45],
+        label: "Reasons for Cart Abandonment (%)",
+        data: [48, 26, 25, 23, 22],
         fill: true,
         backgroundColor: "rgba(126, 58, 242, 0.1)",
         borderColor: "rgba(126, 58, 242, 1)",
@@ -139,11 +204,11 @@ const chartData: Record<ChartType, ChartData<"line">> = {
     ],
   },
   performance: {
-    labels: ["2023", "2024", "2025", "2026", "2027", "2028"],
+    labels: ["2020", "2021", "2022", "2023", "2024"],
     datasets: [
       {
-        label: "E-commerce Growth (Trillions USD)",
-        data: [5.8, 6.3, 6.9, 7.5, 8.1, 8.8],
+        label: "Shopify Annual Revenue (Billions USD)",
+        data: [2.93, 4.61, 5.60, 7.06, 8.88],
         fill: true,
         backgroundColor: "rgba(126, 58, 242, 0.1)",
         borderColor: "rgba(126, 58, 242, 1)",
@@ -197,12 +262,10 @@ export default function Features() {
           className="text-center mb-16"
         >
           <h2 className="text-4xl font-bold text-brand-dark mb-4">
-            Making the Web Accessible for Everyone
+            Transform Your Shopify Store's Performance
           </h2>
           <p className="text-xl text-brand-dark/70 max-w-3xl mx-auto">
-            Our AI-powered voice navigation system breaks down barriers,
-            enabling everyone to browse the web with confidence and
-            independence.
+            With an average cart abandonment rate of 70.19% in 2024, Shopify stores are losing significant revenue. Our AI chatbot helps recover lost sales and improve user engagement.
           </p>
         </motion.div>
 
@@ -237,8 +300,7 @@ export default function Features() {
               Real Impact, Real Results
             </h2>
             <p className="text-xl text-brand-dark/70">
-              See how our voice navigation technology improves web accessibility
-              and user independence over time.
+              Discover how our AI chatbot addresses the top reasons for cart abandonment and helps boost your Shopify store's conversion rate above the industry average of 1.4%.
             </p>
           </div>
 
@@ -259,7 +321,7 @@ export default function Features() {
                   transition={{ duration: 0.3 }}
                   className="w-full h-full"
                 >
-                  <Line data={chartData[activeChart]} options={chartOptions} />
+                  <Line data={chartData[activeChart]} options={getChartOptions(activeChart)} />
                 </motion.div>
               </AnimatePresence>
             </motion.div>

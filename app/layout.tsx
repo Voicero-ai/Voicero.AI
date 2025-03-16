@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import Script from "next/script";
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 export const metadata: Metadata = {
   title: "Voicero.AI - AI-Powered Voice Navigation",
@@ -60,7 +62,13 @@ export default function RootLayout({
         className="bg-white text-brand-text-primary font-sans antialiased"
         suppressHydrationWarning
       >
-        {children}
+        <div className="min-h-screen flex flex-col">
+          <Navbar />
+          <main className="flex-grow">
+            {children}
+          </main>
+          <Footer />
+        </div>
         <Analytics />
       </body>
     </html>
