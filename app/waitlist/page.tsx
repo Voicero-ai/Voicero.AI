@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { FaEnvelope, FaRocket, FaCheck, FaShopify, FaChartLine, FaUsers } from "react-icons/fa";
+import { FaEnvelope, FaRocket, FaCheck, FaShopify, FaChartLine, FaUsers, FaWordpress } from "react-icons/fa";
 
 const floatingAnimation = {
   initial: { y: 0 },
@@ -35,9 +35,42 @@ export default function WaitlistPage() {
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [message, setMessage] = useState("");
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
+  const [captchaProblem, setCaptchaProblem] = useState({ num1: 0, num2: 0 });
+  const [showCaptcha, setShowCaptcha] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState<"shopify" | "wordpress" | null>(null);
+
+  // Generate a new CAPTCHA problem
+  const generateCaptcha = () => {
+    const num1 = Math.floor(Math.random() * 10) + 1;
+    const num2 = Math.floor(Math.random() * 10) + 1;
+    setCaptchaProblem({ num1, num2 });
+    setCaptchaAnswer("");
+  };
+
+  const handleEmailSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPlatform) {
+      setStatus("error");
+      setMessage("Please select your platform first");
+      return;
+    }
+    setShowCaptcha(true);
+    generateCaptcha();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Verify CAPTCHA
+    const expectedAnswer = captchaProblem.num1 + captchaProblem.num2;
+    if (parseInt(captchaAnswer) !== expectedAnswer) {
+      setStatus("error");
+      setMessage("Incorrect CAPTCHA answer. Please try again.");
+      generateCaptcha();
+      return;
+    }
+
     setStatus("loading");
     setMessage("");
 
@@ -61,6 +94,8 @@ export default function WaitlistPage() {
       setStatus("success");
       setMessage("You've been added to our waitlist!");
       setEmail("");
+      setShowCaptcha(false);
+      setCaptchaAnswer("");
     } catch (error) {
       setStatus("error");
       setMessage("Something went wrong. Please try again.");
@@ -154,27 +189,82 @@ export default function WaitlistPage() {
           <div className="absolute -inset-[1px] bg-gradient-to-r from-brand-accent via-[#9F5EF0] to-brand-accent rounded-xl opacity-70 blur group-hover:opacity-100 transition-all duration-300" />
           
           <div className="bg-white rounded-xl shadow-sm border border-brand-lavender-light/20 p-4 md:p-8 relative">
-            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FaEnvelope className="text-brand-accent w-5 h-5" />
+            <form onSubmit={showCaptcha ? handleSubmit : handleEmailSubmit} className="space-y-4 md:space-y-6">
+              <div className="space-y-4">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <FaEnvelope className="text-brand-accent w-5 h-5" />
+                  </div>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    className="w-full pl-12 pr-4 py-3 border border-brand-lavender-light/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-accent/20 transition-all text-base md:text-lg"
+                    required
+                  />
                 </div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email address"
-                  className="w-full pl-12 pr-4 py-3 border border-brand-lavender-light/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-accent/20 transition-all text-base md:text-lg"
-                  required
-                />
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlatform("shopify")}
+                    className={`flex items-center justify-center gap-1.5 p-2 rounded-lg border-2 transition-all text-sm
+                    ${
+                      selectedPlatform === "shopify"
+                        ? "border-[#95BF47] bg-[#95BF47] text-white hover:bg-[#7AA63C]"
+                        : "border-[#95BF47] bg-[#95BF47] text-white hover:bg-[#7AA63C]"
+                    }`}
+                  >
+                    <FaShopify className="w-4 h-4" />
+                    <span className="font-medium">
+                      Shopify
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlatform("wordpress")}
+                    className={`flex items-center justify-center gap-1.5 p-2 rounded-lg border-2 transition-all text-sm
+                    ${
+                      selectedPlatform === "wordpress"
+                        ? "border-[#21759B] bg-[#21759B] text-white hover:bg-[#1A5F7A]"
+                        : "border-[#21759B] bg-[#21759B] text-white hover:bg-[#1A5F7A]"
+                    }`}
+                  >
+                    <FaWordpress className="w-4 h-4" />
+                    <span className="font-medium">
+                      WordPress
+                    </span>
+                  </button>
+                </div>
               </div>
+
+              {showCaptcha && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-2"
+                >
+                  <p className="text-brand-text-secondary">Please solve this simple math problem:</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-bold">{captchaProblem.num1} + {captchaProblem.num2} =</span>
+                    <input
+                      type="number"
+                      value={captchaAnswer}
+                      onChange={(e) => setCaptchaAnswer(e.target.value)}
+                      className="w-20 pl-2 pr-4 py-2 border border-brand-lavender-light/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-accent/20 transition-all text-base"
+                      required
+                    />
+                  </div>
+                </motion.div>
+              )}
 
               <button
                 type="submit"
-                disabled={status === "loading"}
+                disabled={status === "loading" || !selectedPlatform}
                 className={`w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg text-white font-medium transition-all text-base md:text-lg
                 ${
-                  status === "loading"
+                  status === "loading" || !selectedPlatform
                     ? "bg-brand-accent/70 cursor-not-allowed"
                     : "bg-brand-accent hover:bg-brand-accent/90"
                 }`}
@@ -184,7 +274,7 @@ export default function WaitlistPage() {
                 ) : (
                   <>
                     <FaRocket className="w-5 h-5" />
-                    Join Waitlist
+                    {showCaptcha ? "Submit" : "Join Waitlist"}
                   </>
                 )}
               </button>
